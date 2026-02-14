@@ -1,10 +1,6 @@
-####
-<svg xmlns="http://www.w3.org/2000/svg" width="150" height="150">
-  <image href="./resources/icon2.svg" width="100%" height="100%" />
-</svg>
-
+<img src="resources/icon2.svg" width="150" />
 ---
-# glod: Geometry Low On Dependencies
+# Geometry, Low On Dependencies
 
 **glod** is a Python package for handling simple geospatial geometries in a low-dependency way.
 It was developed to create a lightweight GIS means of interacting with web APIs which return spatial data without needing
