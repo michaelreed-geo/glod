@@ -1,5 +1,5 @@
 <img src="resources/icon2.svg" width="150" />
----
+
 # Geometry, Low On Dependencies
 
 **glod** is a Python package for handling simple geospatial geometries in a low-dependency way.
@@ -11,7 +11,6 @@ The goal of this project, as the name suggests, it to keep the number of externa
 _Current number of external dependencies: 1_
 
 ## Features
-___
 * Supports simple, 2D geometries (Point, LineString, Polygon) via a single object `Geometry`
 * Analyses intersections between geometries
 * Using `Feature` to store attributes alongside geometries
