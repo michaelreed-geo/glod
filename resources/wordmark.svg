@@ -1,0 +1,41 @@
+<svg width="260" height="100" xmlns="http://www.w3.org/2000/svg">
+<!--    <rect x="0" y="0" width="600" height="100" fill="red"/>-->
+  <style>
+      :root {
+        --g-color: rgb(105,51,176);
+        --l-color: rgb(91,208,187);
+        --o-color: rgb(252,141,69);
+        --d-color: rgb(69,117,243);
+        --stroke-color: rgb(255,255,255);
+      }
+      .normal {
+        font: bold 50px sans-serif;
+        fill: white;
+      }
+  </style>
+  <defs>
+	<path id="g" d="M50,7 L20,25 L30,31 L20,37 L10,31 L00,37 L20,49 L70,19 L50,7" stroke="var(--stroke-color)" fill="var(--g-color)" stroke-linecap="square" stroke-linejoin="miter"/>
+    <path id="l" d="M50,7 L00,37 L20,49 L30,43 L20, 37 L60,13 L50,7" stroke="var(--stroke-color)" fill="var(--l-color)" stroke-linecap="square" stroke-linejoin="miter"/>
+    <path id="o" d="M50,7 L20,25 L40,37 L70,19 L50,7" stroke="var(--stroke-color)" fill="var(--o-color)" stroke-linecap="square" stroke-linejoin="miter"/>
+    <path id="d" d="M50,7 L30,19 L20,13 L-10,31 L10,43 L60,13 L50,7" stroke="var(--stroke-color)" fill="var(--d-color)" stroke-linecap="square" stroke-linejoin="miter"/>
+  </defs>
+  <g transform="translate(14,-2)">
+	<use href="#g"/>
+    <use href="#l" x="" y="24"/>
+    <use href="#o" x="" y="36"/>
+    <use href="#d" x="10" y="54"/>
+  </g>
+  <text x="121" y="63" class="normal" letter-spacing="6">glod</text>
+<!--  <g transform="translate(100,3) scale(0.9, 0.9)">-->
+<!--    <g transform="translate(50,-2)">-->
+<!--	<use href="#g" transform=" translate(0,45) rotate(-30)"/>-->
+<!--    <use href="#l" x="" y="24" transform="translate(24, 24) rotate(-30)"/>-->
+<!--    <use href="#o" x="" y="36" transform="translate(44, 34) rotate(-30)"/>-->
+<!--    <use href="#d" x="10" y="54" transform="translate(86, 3) rotate(-30)"/>-->
+<!--  </g>-->
+<!--  <path d="M0,50 L500,50" stroke="white"/>-->
+<!--    <path d="M0,25 L500,25" stroke="white"/>-->
+<!--    <path d="M0,75 L500,75" stroke="white"/>-->
+<!--    <path d="M13,0 L13,100" stroke="white"/>-->
+<!--    <path d="M247,0 L247,100" stroke="white"/>-->
+</svg>

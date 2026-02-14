@@ -1,0 +1,13 @@
+[project]
+name = "glod"
+version = "0.1.0"
+description = "Geometry, Low On Dependencies"
+requires-python = ">=3.12"
+dependencies = [
+    "pyproj>=3.7.2"
+]
+
+[dependency-groups]
+test = [
+    "pytest>=9.0.2"
+]
