@@ -47,11 +47,11 @@ def get_coordinates_from_wkt(
     return output
 
 
-def flatten_coordinate_tuple_to_str(
+def flatten_coordinates_to_str(
     coordinates: tuple[float, float] | tuple[tuple[float, float]],
 ) -> str:
     """
-    Flattens a tuple of coordinates into a WKT string format. Removing tuple brackets and unwanted
+    Flattens a tuple or list of coordinates into a WKT string format. Removing tuple brackets and unwanted
     commas between x y pairs.
 
     Args:
@@ -61,7 +61,7 @@ def flatten_coordinate_tuple_to_str(
         The coordinates as a WKT-style string.
     """
     # TODO: add error handling
-    if isinstance(coordinates[0], tuple):
+    if isinstance(coordinates[0], tuple) or isinstance(coordinates[0], list):
         # tuple of tuples
         coordinates_str = ", ".join([f"{i[0]} {i[1]}" for i in coordinates])
     else:
@@ -146,7 +146,7 @@ def format_wkt_string(wkt: str) -> str:
         The formatted string.
     """
     coordinates = get_coordinates_from_wkt(wkt)
-    coordinates_str = flatten_coordinate_tuple_to_str(coordinates)
+    coordinates_str = flatten_coordinates_to_str(coordinates)
 
     if wkt.upper().startswith("POINT"):
         output = f"POINT {coordinates_str}"
@@ -197,14 +197,17 @@ def geojson_to_wkt(geojson: dict) -> str:
     output = None  # default in case geojson is null geometry
     if geojson is not None:
         match geojson["type"]:
+            # TODO: handle case where geojson has type but no coordinates?
             case "Point":
-                output = (
-                    f"POINT {flatten_coordinate_tuple_to_str(geojson['coordinates'])}"
-                )
+                output = f"POINT {flatten_coordinates_to_str(geojson['coordinates'])}"
             case "LineString":
-                output = f"LINESTRING {flatten_coordinate_tuple_to_str(geojson['coordinates'])}"
+                output = (
+                    f"LINESTRING {flatten_coordinates_to_str(geojson['coordinates'])}"
+                )
             case "Polygon":
-                output = f"POLYGON ({flatten_coordinate_tuple_to_str(geojson['coordinates'][0])})"
+                output = (
+                    f"POLYGON ({flatten_coordinates_to_str(geojson['coordinates'][0])})"
+                )
             case _:
                 output = None
     return output
@@ -232,7 +235,7 @@ def coordinates_to_wkt(
     coordinates: tuple[float, float] | tuple[tuple[float, float]],
 ) -> str | None:
     output = None
-    coordinates_str = flatten_coordinate_tuple_to_str(coordinates)
+    coordinates_str = flatten_coordinates_to_str(coordinates)
     if isinstance(coordinates[0], tuple):
         if len(coordinates) > 1 and coordinates[0] != coordinates[-1]:
             # line coordinates
@@ -252,7 +255,7 @@ def transform_coordinates(
     out_crs: CRSType,
     always_xy: bool = True,
     accuracy: int | None = None,
-):
+) -> tuple[float, float] | tuple[tuple[float, float]]:
     if not glod.config.USE_PYPROJ:
         raise RuntimeError(
             "Coordinate transformation is disabled. Call glod.set_use_pyproj(True) to enable."
@@ -406,7 +409,7 @@ def feature_to_geojson(wkt: str, attributes: dict):
     output = {
         "type": "Feature",
         "geometry": wkt_to_geojson(wkt),
-        "properties": attributes
+        "properties": attributes,
     }
     return output
 

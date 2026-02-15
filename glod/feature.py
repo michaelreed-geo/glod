@@ -1,6 +1,5 @@
 from .geometry import Geometry
-
-from .utils import feature_to_geojson, CRSType
+from .utils import CRSType, feature_to_geojson
 
 
 class Feature:

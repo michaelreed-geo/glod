@@ -46,7 +46,7 @@ class Geometry:
         geo = {
             "type": self.geometry_type,
             "bbox": self.bounds,
-            "coordinates": self.coordinates
+            "coordinates": self.coordinates,
         }
         return geo
 
