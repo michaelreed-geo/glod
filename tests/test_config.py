@@ -1,5 +1,7 @@
 import importlib
+
 import pytest
+
 import glod.config as config
 
 
@@ -33,4 +35,5 @@ def test_flag_is_module_global():
 
     # Re-import should reference same module object
     import glod.config as config_again
+
     assert config_again.USE_PYPROJ is False
