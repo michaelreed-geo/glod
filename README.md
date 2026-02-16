@@ -1,6 +1,6 @@
 <img src="resources/icon2.svg" width="150" />
 
-# Geometry, Low On Dependencies
+# geometry, low on dependencies
 
 **glod** is a Python package for handling simple geospatial geometries in a low-dependency way.
 It was developed to create a lightweight GIS means of interacting with web APIs which return spatial data without needing
@@ -15,9 +15,11 @@ _Current number of external dependencies: 1_
 ---
 * Supports simple, 2D geometries (Point, LineString, Polygon) via a single `Geometry` object
 * Store attributes alongside geometries with the `Feature` object
+* Group features as `FeatureCollection` objects
 * Analyse intersections between geometries
 * Access basic geometric properties of geometries (centroid, bounds)
-* Import/export of geometries as Well Known Text (WKT) or geojson types
+* Import/export `Geometry` as Well Known Text (WKT) or geojson types
+* Import/export `FeatureCollection` as full geojson files 
 * Implements the [`__geo_interface__`](https://gist.github.com/sgillies/2217756) protocol for interoperability with other packages and software
 * Uses [pyproj](https://github.com/pyproj4/pyproj) for coordinate transforms*
 
