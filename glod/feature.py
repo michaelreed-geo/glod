@@ -1,5 +1,4 @@
-from .geometry import Geometry
-from .utils import CRSType, feature_to_geojson
+from .geometry import Geometry, CRSType, wkt_to_geojson
 
 import os
 import json
@@ -86,3 +85,11 @@ class FeatureCollection:
     #     if isinstance(object, str):
     #         # if path, read from file
 
+
+def feature_to_geojson(wkt: str, attributes: dict):
+    output = {
+        "type": "Feature",
+        "geometry": wkt_to_geojson(wkt),
+        "properties": attributes,
+    }
+    return output
