@@ -42,7 +42,7 @@ class Geometry:
     @property
     def __geo_interface__(self) -> dict:
         geo = {
-            "type": self.geometry_type,
+            "type": self.type,
             "bbox": self.bounds,
             "coordinates": self.coordinates,
         }
@@ -77,13 +77,13 @@ class Geometry:
 
     @property
     def envelope(self) -> "Polygon | None":
-        if self.geometry_type == "Point":
+        if self.type == "Point":
             return None
         else:
             return Geometry(bounds_to_polygon_wkt(self.bounds), self.crs)
 
     @property
-    def geometry_type(self) -> str:
+    def type(self) -> str:
         return get_wkt_type_from_str(self.to_wkt)
 
     @classmethod
