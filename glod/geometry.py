@@ -110,8 +110,7 @@ class Geometry:
         return cls(wkt=wkt, crs=crs)
 
     def intersects(self, geometry: "Geometry") -> bool:
-        # TODO
-        ...
+        return check_geometries_intersect(self, geometry)
 
     @property
     def to_geojson(self) -> str | dict:
@@ -498,20 +497,17 @@ def get_linestring_centroid(
     coordinates: tuple[tuple[float, float]],
 ) -> tuple[float, float]:
     """
-    Calculate the centroid of a linestring.
+    Calculate the centroid of a LineString.
 
     Args:
-        coordinates: List of (x, y) tuples representing the linestring vertices.
+        coordinates: tuple of tuple x,y vertices
 
     Returns:
         (x_centroid, y_centroid)
     """
-    if len(coordinates) < 2:
-        raise ValueError("Linestring must have at least 2 points")
-
-    total_length = 0.0
-    cx = 0.0
-    cy = 0.0
+    total_length = 0
+    cx = 0
+    cy = 0
 
     for (x0, y0), (x1, y1) in zip(coordinates[:-1], coordinates[1:]):
         segment_length = ((x1 - x0) ** 2 + (y1 - y0) ** 2) ** 0.5
@@ -521,57 +517,35 @@ def get_linestring_centroid(
         cy += midpoint_y * segment_length
         total_length += segment_length
 
-    if total_length == 0:
-        # all points are identical
-        return coordinates[0]
-
-    return (cx / total_length, cy / total_length)
+    return cx / total_length, cy / total_length
 
 
 def get_polygon_centroid(
     coordinates: tuple[tuple[float, float]],
 ) -> tuple[float, float]:
     """
-    Compute the centroid of a polygon.
+    Calculate the centroid of a LineString.
 
-    Parameters
-    ----------
-    coordinates : tuple of (x, y)
-        The vertices of the polygon in order. The polygon should be closed
-        (first point != last point, the function will handle closing).
+    Args:
+        coordinates: tuple of tuple x,y vertices, where coordinates[0] == coordinates[-1]
 
-    Returns
-    -------
-    (cx, cy) : tuple of float
-        The centroid coordinates.
+    Returns:
+        (x_centroid, y_centroid)
     """
-    if len(coordinates) < 3:
-        raise ValueError("Polygon must have at least 3 vertices")
+    area = 0
+    cx = 0
+    cy = 0
 
-    # Ensure polygon is closed
-    if coordinates[0] != coordinates[-1]:
-        coordinates = coordinates + (coordinates[0],)
-
-    area = 0.0
-    cx = 0.0
-    cy = 0.0
-
-    for i in range(len(coordinates) - 1):
-        x0, y0 = coordinates[i]
-        x1, y1 = coordinates[i + 1]
+    for (x0, y0), (x1, y1) in zip(coordinates[:-2], coordinates[1:-1]):
         cross = x0 * y1 - x1 * y0
         area += cross
         cx += (x0 + x1) * cross
         cy += (y0 + y1) * cross
 
-    area *= 0.5
-    if area == 0:
-        raise ValueError("Polygon area is zero, cannot compute centroid")
+    cx /= 3 * area
+    cy /= 3 * area
 
-    cx /= 6.0 * area
-    cy /= 6.0 * area
-
-    return (cx, cy)
+    return cx, cy
 
 
 def get_geometry_centroid(wkt: str) -> tuple[float, float] | None:
@@ -613,3 +587,112 @@ def bounds_to_polygon_wkt(bounds: tuple[float, float, float, float]) -> str:
         (x_min, y_min),
     )
     return coordinates_to_wkt(coordinates)
+
+
+
+def get_points_orientation(p1: tuple[float, float], p2: tuple[float, float], p3: tuple[float, float]) -> int:
+    """
+    Check the orientation of three points.
+
+    Args:
+        p1: tuple of x,y coordinates
+        p2: tuple of x,y coordinates
+        p3: tuple of x,y coordinates
+
+    Returns:
+        0 if collinear, 1 if clockwise, 2 if anti-clockwise
+    """
+    output = (p2[1] - p1[1]) * (p3[0] - p2[0]) - (p2[0] - p1[0]) * (p3[1] - p2[1])
+
+    if abs(output) < 1e-6:
+        return 0
+    elif output > 0:
+        return 1
+    else:
+        return 2
+
+
+def is_point_on_line(line: tuple[tuple[float, float], tuple[float, float]], point: tuple[float, float]) -> bool:
+    """
+    Check if `point` lies on `line`.
+
+    Args:
+        line: a line segment as two x,y coordinate pairs
+        point: a point given as an x,y coordinate
+
+    Returns:
+        True if `point` is on `line`, False if not.
+    """
+    p1, p2 = line
+    output = (min(p1[0], p2[0]) <= point[0] <= max(p1[0], p2[0]) and
+              min(p1[1], p2[1]) <= point[1] <= max(p1[1], p2[1]))
+    return output
+
+
+def check_segments_intersect(
+        line1: tuple[tuple[float, float], tuple[float, float]],
+        line2: tuple[tuple[float, float], tuple[float, float]]
+) -> bool:
+    p1, q1 = line1
+    p2, q2 = line2
+
+    orientation1 = get_points_orientation(p1, p2, q1)
+    orientation2 = get_points_orientation(p1, p2, q2)
+    orientation3 = get_points_orientation(q1, q2, p1)
+    orientation4 = get_points_orientation(q1, q2, p2)
+
+    if orientation1 != orientation2 and orientation3 != orientation4:
+        return True
+
+    # check if collinear
+    if orientation1 == 0 and is_point_on_line(line=(p1, p2), point=q1): return True
+    if orientation2 == 0 and is_point_on_line(line=(p1, p2), point=q2): return True
+    if orientation3 == 0 and is_point_on_line(line=(q1, q2), point=p1): return True
+    if orientation4 == 0 and is_point_on_line(line=(q1, q2), point=p2): return True
+
+    # no intersection
+    return False
+
+
+def coordinates_to_line_segments(coordinates: tuple[tuple[float, float],...]) -> tuple[tuple[tuple[float, float], tuple[float, float]], ...]:
+    segments = []
+    for i in range(len(coordinates) - 1):
+        segments.append((coordinates[i], coordinates[i+1]))
+    return tuple(segments)
+
+
+def do_bounds_interesct(geometry1: Geometry, geometry2: Geometry) -> bool:
+    # transform geometry2 if needed
+    if geometry1.crs != geometry2.crs:
+        geometry2 = geometry2.transform(out_crs=geometry1.crs)
+
+    x_min1, y_min1, x_max1, y_max1 = geometry1.bounds
+    x_min2, y_min2, x_max2, y_max2 = geometry2.bounds
+    if x_min1 > x_max2 or x_min2 > x_max1 or y_min1 > y_max2 or y_min2 > y_max1:
+        return False
+    return True
+
+
+
+def check_geometries_intersect(geometry1: Geometry, geometry2: Geometry) -> bool:
+    if geometry1.type != "Point" and geometry2.type != "Point":
+        # transform geometry2 if needed
+        if geometry1.crs != geometry2.crs:
+            geometry2 = geometry2.transform(out_crs=geometry1.crs)
+
+        # check bounding boxes intersect for quick rejection
+        if not do_bounds_interesct(geometry1, geometry2):
+            return False
+
+        # check segments intersect
+        segments1 = coordinates_to_line_segments(geometry1.coordinates)
+        segments2 = coordinates_to_line_segments(geometry2.coordinates)
+
+        for line1 in segments1:
+            for line2 in segments2:
+                if check_segments_intersect(line1, line2):
+                    return True
+        return False
+    else:
+        raise ValueError("Point geometry!")
+        # TODO: add check for point intersecting line or point within/intersecting polygon
