@@ -1,9 +1,21 @@
 import pytest
 
-from glod.geometry import get_coordinates_from_wkt, flatten_coordinates_to_str, is_wkt_string_valid, \
-    format_wkt_string, wkt_to_geojson, geojson_to_wkt, is_crs_valid, coordinates_to_wkt, \
-    transform_coordinates, get_wkt_type_from_str, get_linestring_centroid, get_polygon_centroid, \
-    get_geometry_centroid, bounds_to_polygon_wkt
+from glod.geometry import (
+    get_coordinates_from_wkt,
+    flatten_coordinates_to_str,
+    is_wkt_string_valid,
+    format_wkt_string,
+    wkt_to_geojson,
+    geojson_to_wkt,
+    is_crs_valid,
+    coordinates_to_wkt,
+    transform_coordinates,
+    get_wkt_type_from_str,
+    get_linestring_centroid,
+    get_polygon_centroid,
+    get_geometry_centroid,
+    bounds_to_polygon_wkt,
+)
 
 
 @pytest.mark.parametrize(

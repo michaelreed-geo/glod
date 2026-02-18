@@ -8,7 +8,6 @@ if TYPE_CHECKING:
     from pyproj.crs import CRS
 
 
-
 CRSType = "str | CRS"
 WKT_TYPES = ["POINT", "LINESTRING", "POLYGON"]
 
@@ -589,8 +588,9 @@ def bounds_to_polygon_wkt(bounds: tuple[float, float, float, float]) -> str:
     return coordinates_to_wkt(coordinates)
 
 
-
-def get_points_orientation(p1: tuple[float, float], p2: tuple[float, float], p3: tuple[float, float]) -> int:
+def get_points_orientation(
+    p1: tuple[float, float], p2: tuple[float, float], p3: tuple[float, float]
+) -> int:
     """
     Check the orientation of three points.
 
@@ -612,7 +612,9 @@ def get_points_orientation(p1: tuple[float, float], p2: tuple[float, float], p3:
         return 2
 
 
-def is_point_on_line_segment(line: tuple[tuple[float, float], tuple[float, float]], point: tuple[float, float]) -> bool:
+def is_point_on_line_segment(
+    line: tuple[tuple[float, float], tuple[float, float]], point: tuple[float, float]
+) -> bool:
     """
     Check if `point` lies on `line`.
 
@@ -624,14 +626,15 @@ def is_point_on_line_segment(line: tuple[tuple[float, float], tuple[float, float
         True if `point` is on `line`, False if not.
     """
     p1, p2 = line
-    output = (min(p1[0], p2[0]) <= point[0] <= max(p1[0], p2[0]) and
-              min(p1[1], p2[1]) <= point[1] <= max(p1[1], p2[1]))
+    output = min(p1[0], p2[0]) <= point[0] <= max(p1[0], p2[0]) and min(
+        p1[1], p2[1]
+    ) <= point[1] <= max(p1[1], p2[1])
     return output
 
 
 def check_segments_intersect(
-        line1: tuple[tuple[float, float], tuple[float, float]],
-        line2: tuple[tuple[float, float], tuple[float, float]]
+    line1: tuple[tuple[float, float], tuple[float, float]],
+    line2: tuple[tuple[float, float], tuple[float, float]],
 ) -> bool:
     p1, q1 = line1
     p2, q2 = line2
@@ -645,19 +648,25 @@ def check_segments_intersect(
         return True
 
     # check if collinear
-    if orientation1 == 0 and is_point_on_line_segment(line=(p1, p2), point=q1): return True
-    if orientation2 == 0 and is_point_on_line_segment(line=(p1, p2), point=q2): return True
-    if orientation3 == 0 and is_point_on_line_segment(line=(q1, q2), point=p1): return True
-    if orientation4 == 0 and is_point_on_line_segment(line=(q1, q2), point=p2): return True
+    if orientation1 == 0 and is_point_on_line_segment(line=(p1, p2), point=q1):
+        return True
+    if orientation2 == 0 and is_point_on_line_segment(line=(p1, p2), point=q2):
+        return True
+    if orientation3 == 0 and is_point_on_line_segment(line=(q1, q2), point=p1):
+        return True
+    if orientation4 == 0 and is_point_on_line_segment(line=(q1, q2), point=p2):
+        return True
 
     # no intersection
     return False
 
 
-def coordinates_to_line_segments(coordinates: tuple[tuple[float, float],...]) -> tuple[tuple[tuple[float, float], tuple[float, float]], ...]:
+def coordinates_to_line_segments(
+    coordinates: tuple[tuple[float, float], ...],
+) -> tuple[tuple[tuple[float, float], tuple[float, float]], ...]:
     segments = []
     for i in range(len(coordinates) - 1):
-        segments.append((coordinates[i], coordinates[i+1]))
+        segments.append((coordinates[i], coordinates[i + 1]))
     return tuple(segments)
 
 
@@ -671,7 +680,6 @@ def do_bounds_interesct(geometry1: Geometry, geometry2: Geometry) -> bool:
     if x_min1 > x_max2 or x_min2 > x_max1 or y_min1 > y_max2 or y_min2 > y_max1:
         return False
     return True
-
 
 
 def check_geometries_intersect(geometry1: Geometry, geometry2: Geometry) -> bool:

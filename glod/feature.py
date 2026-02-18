@@ -15,7 +15,7 @@ class Feature:
         geo = {
             "type": "Feature",
             "geometry": self.geometry.__geo_interface__,
-            "properties": self.attributes
+            "properties": self.attributes,
         }
         return geo
 
@@ -36,7 +36,7 @@ class FeatureCollection:
     def __init__(self, features: list[Feature]):
         self.features = features
 
-    def to_geojson(self, path: str | None = None, crs: CRSType = None)-> dict:
+    def to_geojson(self, path: str | None = None, crs: CRSType = None) -> dict:
         return feature_collection_to_geojson(self, path, crs)
 
     @classmethod
@@ -53,7 +53,9 @@ def feature_to_geojson(wkt: str, attributes: dict):
     return output
 
 
-def feature_collection_to_geojson(feature_collection: FeatureCollection, path: str | None = None, crs: CRSType = None) -> dict:
+def feature_collection_to_geojson(
+    feature_collection: FeatureCollection, path: str | None = None, crs: CRSType = None
+) -> dict:
     if crs is None:
         # construct dict of each crs used by features and count how often they occur
         found_crs = {}
