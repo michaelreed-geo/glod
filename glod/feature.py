@@ -1,8 +1,8 @@
-from .geometry import Geometry, CRSType, wkt_to_geojson
+import json
+import os
 from typing import Any
 
-import os
-import json
+from .geometry import CRSType, Geometry, wkt_to_geojson
 
 
 class Feature:

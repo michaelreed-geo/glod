@@ -1,20 +1,20 @@
 import pytest
 
 from glod.geometry import (
-    get_coordinates_from_wkt,
-    flatten_coordinates_to_str,
-    is_wkt_string_valid,
-    format_wkt_string,
-    wkt_to_geojson,
-    geojson_to_wkt,
-    is_crs_valid,
+    bounds_to_polygon_wkt,
     coordinates_to_wkt,
-    transform_coordinates,
-    get_wkt_type_from_str,
+    flatten_coordinates_to_str,
+    format_wkt_string,
+    geojson_to_wkt,
+    get_coordinates_from_wkt,
+    get_geometry_centroid,
     get_linestring_centroid,
     get_polygon_centroid,
-    get_geometry_centroid,
-    bounds_to_polygon_wkt,
+    get_wkt_type_from_str,
+    is_crs_valid,
+    is_wkt_string_valid,
+    transform_coordinates,
+    wkt_to_geojson,
 )
 
 
