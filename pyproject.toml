@@ -3,7 +3,10 @@ name = "glod"
 version = "0.1.0"
 description = "Geometry, Low On Dependencies"
 requires-python = ">=3.12"
-dependencies = [
+dependencies = []
+
+[project.optional-dependencies]
+transforms = [
     "pyproj>=3.7.2"
 ]
 
