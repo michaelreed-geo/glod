@@ -68,7 +68,7 @@ class Geometry:
         return Geometry(wkt, self.crs)
 
     @property
-    def coordinates(self) -> tuple[float, float] | tuple[tuple[float, float]]:
+    def coordinates(self) -> tuple[float, float] | tuple[tuple[float, float], ...]:
         return get_coordinates_from_wkt(self.to_wkt)
 
     @property
@@ -178,7 +178,7 @@ def get_coordinates_from_wkt(
 
 
 def flatten_coordinates_to_str(
-    coordinates: tuple[float, float] | tuple[tuple[float, float]],
+    coordinates: tuple[float, float] | tuple[tuple[float, float], ...],
 ) -> str:
     """
     Flattens a tuple or list of coordinates into a WKT string format. Removing tuple brackets and unwanted
@@ -381,7 +381,7 @@ def is_crs_valid(crs: str) -> bool | None:
 
 
 def coordinates_to_wkt(
-    coordinates: tuple[float, float] | tuple[tuple[float, float]],
+    coordinates: tuple[float, float] | tuple[tuple[float, float], ...],
 ) -> str | None:
     """
     Converts a list of geometry coordinates into a well known text (WKT) representation.
@@ -413,12 +413,12 @@ def coordinates_to_wkt(
 
 
 def transform_coordinates(
-    coordinates: tuple[float, float] | tuple[tuple[float, float]],
+    coordinates: tuple[float, float] | tuple[tuple[float, float], ...],
     in_crs: CRSType,
     out_crs: CRSType,
     always_xy: bool = True,
     accuracy: int | None = None,
-) -> tuple[float, float] | tuple[tuple[float, float]]:
+) -> tuple[float, float] | tuple[tuple[float, float], ...]:
     """
     Transforms coordinates from one coordinate reference system (CRS) to another using pyproj.
 
@@ -494,7 +494,7 @@ def get_wkt_type_from_str(wkt: str) -> str:
 
 
 def get_linestring_centroid(
-    coordinates: tuple[tuple[float, float]],
+    coordinates: tuple[tuple[float, float], ...],
 ) -> tuple[float, float]:
     """
     Calculate the centroid of a LineString.
@@ -521,7 +521,7 @@ def get_linestring_centroid(
 
 
 def get_polygon_centroid(
-    coordinates: tuple[tuple[float, float]],
+    coordinates: tuple[tuple[float, float], ...],
 ) -> tuple[float, float]:
     """
     Calculate the centroid of a LineString.
@@ -612,7 +612,7 @@ def get_points_orientation(p1: tuple[float, float], p2: tuple[float, float], p3:
         return 2
 
 
-def is_point_on_line(line: tuple[tuple[float, float], tuple[float, float]], point: tuple[float, float]) -> bool:
+def is_point_on_line_segment(line: tuple[tuple[float, float], tuple[float, float]], point: tuple[float, float]) -> bool:
     """
     Check if `point` lies on `line`.
 
@@ -645,10 +645,10 @@ def check_segments_intersect(
         return True
 
     # check if collinear
-    if orientation1 == 0 and is_point_on_line(line=(p1, p2), point=q1): return True
-    if orientation2 == 0 and is_point_on_line(line=(p1, p2), point=q2): return True
-    if orientation3 == 0 and is_point_on_line(line=(q1, q2), point=p1): return True
-    if orientation4 == 0 and is_point_on_line(line=(q1, q2), point=p2): return True
+    if orientation1 == 0 and is_point_on_line_segment(line=(p1, p2), point=q1): return True
+    if orientation2 == 0 and is_point_on_line_segment(line=(p1, p2), point=q2): return True
+    if orientation3 == 0 and is_point_on_line_segment(line=(q1, q2), point=p1): return True
+    if orientation4 == 0 and is_point_on_line_segment(line=(q1, q2), point=p2): return True
 
     # no intersection
     return False
