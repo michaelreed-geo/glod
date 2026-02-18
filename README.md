@@ -8,7 +8,8 @@ to rely on more extensive spatial packages.
 
 The goal of this project, as the name suggests, is to keep the number of external dependencies low!
 
-_Current number of external dependencies: 1_
+![Static Badge](https://img.shields.io/badge/mandatory_dependencies-0-green)
+![Static Badge](https://img.shields.io/badge/optional_dependencies-1-orange)
 
 ## Features
 
@@ -21,9 +22,7 @@ _Current number of external dependencies: 1_
 * Import/export `Geometry` as Well Known Text (WKT) or geojson types
 * Import/export `FeatureCollection` as full geojson files 
 * Implements the [`__geo_interface__`](https://gist.github.com/sgillies/2217756) protocol for interoperability with other packages and software
-* Uses [pyproj](https://github.com/pyproj4/pyproj) for coordinate transforms*
-
-\* pyproj can be disabled at runtime so no import occurs. However, no coordinate transformations can occur without pyproj.
+* Optional: uses [pyproj](https://github.com/pyproj4/pyproj) for coordinate transforms (see [Installation](#Installation))
 
 ## Installation
 
