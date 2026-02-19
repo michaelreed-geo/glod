@@ -8,8 +8,7 @@ to rely on more extensive spatial packages.
 
 The goal of this project, as the name suggests, is to keep the number of external dependencies low!
 
-![Static Badge](https://img.shields.io/badge/mandatory_dependencies-0-green)
-![Static Badge](https://img.shields.io/badge/optional_dependencies-1-orange)
+![Dynamic TOML Badge](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmichaelreed-geo%2Fglod%2Frefs%2Fheads%2Fmain%2Fpyproject.toml&query=%24.project.dependencies&style=flat-square&label=mandatory%20dependencies&color=rgb(69%2C117%2C243))<br>![Dynamic TOML Badge](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmichaelreed-geo%2Fglod%2Frefs%2Fheads%2Fmain%2Fpyproject.toml&query=%24.project.optional-dependencies%5B*%5D&style=flat-square&label=optional%20dependencies&color=rgb(91%2C208%2C187))
 
 ## Features
 
