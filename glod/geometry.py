@@ -13,6 +13,26 @@ WKT_TYPES = ["POINT", "LINESTRING", "POLYGON"]
 
 
 class Geometry:
+    """
+    Lightweight geometry wrapper around a WKT representation.
+
+    This class provides basic geometry functionality such as bounds, centroid, coordinate access,
+    CRS handling, geojson conversion, and intersection testing.
+
+    The internal geometry representation is stored as WKT.
+
+    Args:
+        wkt (str | None):
+            Well-Known Text (WKT) representation of the geometry.
+        crs (CRSType, optional):
+            Coordinate reference system associated with the geometry.
+            May be a string or (if enabled) a pyproj CRS object.
+
+    Raises:
+        ValueError: If the provided WKT is invalid or unsupported.
+        TypeError: If `crs` is an invalid type when pyproj usage is disabled.
+    """
+
     def __init__(self, wkt: str | None = None, crs: CRSType = None):
         if self._wkt_is_valid(wkt):
             self._wkt = format_wkt_string(wkt)
@@ -40,6 +60,17 @@ class Geometry:
 
     @property
     def __geo_interface__(self) -> dict:
+        """
+        Return a geojson-like mapping of the geometry.
+
+        This enables interoperability with libraries that support the `__geo_interface__` protocol.
+
+        Returns:
+            dict: A mapping with keys:
+                - "type": Geometry type as a string.
+                - "bbox": Bounding box tuple (x_min, y_min, x_max, y_max).
+                - "coordinates": Coordinate sequence.
+        """
         geo = {
             "type": self.type,
             "bbox": self.bounds,
@@ -49,6 +80,13 @@ class Geometry:
 
     @property
     def bounds(self) -> tuple[float, float, float, float] | None:
+        """
+        Compute the axis-aligned bounding box of the geometry.
+
+        Returns:
+            tuple[float, float, float, float] | None:
+                Bounding box as (x_min, y_min, x_max, y_max) or None if the geometry is a Point.
+        """
         coordinates = get_coordinates_from_wkt(self.to_wkt)
         if isinstance(coordinates[0], tuple):
             x, y = zip(*coordinates)
@@ -62,20 +100,49 @@ class Geometry:
 
     @property
     def centroid(self) -> "Geometry":
+        """
+        Returns the centroid of the geometry.
+
+        Returns:
+            Geometry: The centroid of the geometry as a new Geometry object.
+        """
+
         coordinate = get_geometry_centroid(self.to_wkt)
         wkt = coordinates_to_wkt(coordinate)
         return Geometry(wkt, self.crs)
 
     @property
     def coordinates(self) -> tuple[float, float] | tuple[tuple[float, float], ...]:
+        """
+        Return the geometry coordinates.
+
+        Returns:
+            tuple or tuple of tuples:
+                - For Point: (x, y)
+                - For LineString or Polygon:
+                  ((x1, y1), (x2, y2), ...)
+        """
         return get_coordinates_from_wkt(self.to_wkt)
 
     @property
     def crs(self) -> str:
+        """
+        Return the coordinate reference system defining the geometry.
+
+        Returns:
+            str | None: CRS string representation, or None if undefined.
+        """
         return self._crs
 
     @property
     def envelope(self) -> "Polygon | None":
+        """
+        Return the bounding box as a polygon geometry.
+
+        Returns:
+            Geometry | None:
+                A polygon representing the bounding box, or None if the geometry is a Point.
+        """
         if self.type == "Point":
             return None
         else:
@@ -83,6 +150,12 @@ class Geometry:
 
     @property
     def type(self) -> str:
+        """
+        Return the geometry type.
+
+        Returns:
+            str: Point, LineString, or Polygon
+        """
         return get_wkt_type_from_str(self.to_wkt)
 
     @classmethod
@@ -91,14 +164,49 @@ class Geometry:
         coordinates: tuple[float, float] | tuple[tuple[float, float]] | None = None,
         crs: CRSType = None,
     ):
+        """
+        Create a Geometry from geometry coordinates.
+
+        Args:
+            coordinates: Coordinate tuple or sequence of coordinate tuples.
+            crs (CRSType, optional): Coordinate reference system.
+
+        Returns:
+            Geometry: A new Geometry instance.
+        """
         return cls(wkt=coordinates_to_wkt(coordinates), crs=crs)
 
     @classmethod
     def from_geojson(cls, geojson: dict, crs: CRSType = None):
+        """
+        Create a Geometry from a geojson "geometry" object.
+
+        `geojson` must be in the form (for example):
+            - `geojson = {"type": "Point", "coordinates": [0, 0]}`
+            - `geojson = {"type": "LineString", "coordinates": [[0, 0], [5, 5]]}`
+            - `geojson = {"type": "Polygon", "coordinates": [[[0, 0], [5, 5], [5, 0], [0, 0]]]}`
+
+        Args:
+            geojson (dict): geojson-like dictionary.
+            crs (CRSType, optional): Coordinate reference system.
+
+        Returns:
+            Geometry: A new Geometry instance.
+        """
         return cls(wkt=geojson_to_wkt(geojson), crs=crs)
 
     @classmethod
     def from_object(cls, object, crs: CRSType = None) -> "Geometry | None":
+        """
+        Create a Geometry from a generic Python object implementing the __geo_interface__ protocol.
+
+        Args:
+            object: Any object exposing a `__geo_interface__` attribute.
+            crs (CRSType, optional): Coordinate reference system.
+
+        Returns:
+            Geometry | None: A new Geometry if possible, otherwise None.
+        """
         if hasattr(object, "__geo_interface__"):
             return cls(wkt=geojson_to_wkt(object.__geo_interface__), crs=crs)
         # if object does not have __geo_interface, no Geometry can be initialised. Return None.
@@ -106,17 +214,48 @@ class Geometry:
 
     @classmethod
     def from_wkt(cls, wkt: str, crs: CRSType = None):
+        """
+        Create a Geometry from a WKT string.
+
+        Args:
+            wkt (str): Well-Known Text geometry string.
+            crs (CRSType, optional): Coordinate reference system.
+
+        Returns:
+            Geometry: A new Geometry instance.
+        """
         return cls(wkt=wkt, crs=crs)
 
     def intersects(self, geometry: "Geometry") -> bool:
+        """
+        Test whether this geometry intersects another.
+
+        Args:
+            geometry (Geometry): Geometry to test against.
+
+        Returns:
+            bool: True if geometries intersect, False if not.
+        """
         return check_geometries_intersect(self, geometry)
 
     @property
     def to_geojson(self) -> str | dict:
+        """
+        Return the geometry as a geojson object.
+
+        Returns:
+            str | dict: GeoJSON representation of the geometry.
+        """
         return wkt_to_geojson(self.to_wkt)
 
     @property
     def to_wkt(self) -> str:
+        """
+        Return the WKT representation of the geometry.
+
+        Returns:
+            str: WKT string.
+        """
         return self._wkt
 
     def transform(
@@ -125,6 +264,23 @@ class Geometry:
         accuracy: int | None = None,
         always_xy: bool = True,
     ) -> "Geometry":
+        """
+        Transform the geometry to a new coordinate reference system.
+
+        To use this method `pyproj` must be installed and `glod.set_use_pyproj(True)` must be called
+        before you call this method.
+
+        Args:
+            out_crs (CRSType): Target CRS.
+            accuracy (int, optional): Decimal precision to round transformed coordinates.
+            always_xy (bool): If True, enforce (x, y) coordinate ordering. Refer to `pyproj` docs.
+
+        Returns:
+            Geometry: A new Geometry instance using the transformed geometry.
+
+        Raises:
+            RuntimeError: If the geometry has no CRS defined.
+        """
         if self.crs is None:
             raise RuntimeError("Cannot transform geometry without a defined CRS.")
 
