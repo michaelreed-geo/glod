@@ -1,21 +1,42 @@
+import importlib
+
 import pytest
 
+import glod.config as config
+
 from glod.geometry import (
+    Geometry,
     bounds_to_polygon_wkt,
+    check_geometries_intersect,
+    check_segments_intersect,
+    coordinates_to_line_segments,
     coordinates_to_wkt,
+    do_bounds_interesct,
     flatten_coordinates_to_str,
     format_wkt_string,
     geojson_to_wkt,
     get_coordinates_from_wkt,
     get_geometry_centroid,
     get_linestring_centroid,
+    get_points_orientation,
     get_polygon_centroid,
     get_wkt_type_from_str,
     is_crs_valid,
+    is_point_on_line_segment,
     is_wkt_string_valid,
     transform_coordinates,
     wkt_to_geojson,
+
 )
+
+@pytest.fixture(autouse=True)
+def reset_use_pyproj():
+    """
+    Ensure each test starts with a clean module state.
+    """
+    importlib.reload(config)
+    yield
+    importlib.reload(config)
 
 
 @pytest.mark.parametrize(
@@ -159,6 +180,7 @@ def test_get_wkt_type_from_str(wkt_str, wkt_type):
     [("EPSG:3857", True), ("EPSG:4326", True), ("abcdef", False), ("27700", True)],
 )
 def test_is_crs_valid(crs, validity):
+    config.set_use_pyproj(True)
     assert is_crs_valid(crs) is validity
 
 
@@ -180,7 +202,7 @@ def test_is_crs_valid(crs, validity):
         ("abc (0 4)", False),  # invalid type string
     ],
 )
-def test_is_wkt_string_valid_POINT(wkt, validity):
+def test_is_wkt_string_valid_point(wkt, validity):
     assert is_wkt_string_valid(wkt, "POINT") is validity
 
 
@@ -204,7 +226,7 @@ def test_is_wkt_string_valid_POINT(wkt, validity):
         ("Linestring (0 4, 1 0, None)", False),  # null coordinate
     ],
 )
-def test_is_wkt_string_valid_LINESTRING(wkt, validity):
+def test_is_wkt_string_valid_linestring(wkt, validity):
     assert is_wkt_string_valid(wkt, "LINESTRING") is validity
 
 
@@ -227,7 +249,7 @@ def test_is_wkt_string_valid_LINESTRING(wkt, validity):
         ("POLYGON ((0 0, 4 0, 4 4, None, 0 0))", False),  # null coordinate
     ],
 )
-def test_is_wkt_string_valid_POLYGON(wkt, validity):
+def test_is_wkt_string_valid_polygon(wkt, validity):
     assert is_wkt_string_valid(wkt, "POLYGON") is validity
 
 
