@@ -3,7 +3,6 @@ import importlib
 import pytest
 
 import glod.config as config
-
 from glod.geometry import (
     Geometry,
     bounds_to_polygon_wkt,
@@ -26,8 +25,8 @@ from glod.geometry import (
     is_wkt_string_valid,
     transform_coordinates,
     wkt_to_geojson,
-
 )
+
 
 @pytest.fixture(autouse=True)
 def reset_use_pyproj():
