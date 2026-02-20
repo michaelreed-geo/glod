@@ -5,6 +5,9 @@ description = "Geometry, Low On Dependencies"
 requires-python = ">=3.12"
 dependencies = []
 
+[tool.setuptools]
+packages = ["glod"]
+
 [project.optional-dependencies]
 transforms = [
     "pyproj>=3.7.2"
