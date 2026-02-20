@@ -649,7 +649,7 @@ def get_wkt_type_from_str(wkt: str) -> str:
 
 
 def get_linestring_centroid(
-    coordinates: tuple[tuple[float, float], ...],
+    coordinates: tuple[tuple[float, float], ...], accuracy: int | None = None
 ) -> tuple[float, float]:
     """
     Calculate the centroid of a LineString.
@@ -672,14 +672,21 @@ def get_linestring_centroid(
         cy += midpoint_y * segment_length
         total_length += segment_length
 
-    return cx / total_length, cy / total_length
+    cx /= total_length
+    cy /= total_length
+
+    if accuracy:
+        cx = round(cx, accuracy)
+        cy = round(cy, accuracy)
+
+    return cx, cy
 
 
 def get_polygon_centroid(
-    coordinates: tuple[tuple[float, float], ...],
+    coordinates: tuple[tuple[float, float], ...], accuracy: int | None = None
 ) -> tuple[float, float]:
     """
-    Calculate the centroid of a LineString.
+    Calculate the centroid of a Polygon.
 
     Args:
         coordinates: tuple of tuple x,y vertices, where coordinates[0] == coordinates[-1]
@@ -691,7 +698,7 @@ def get_polygon_centroid(
     cx = 0
     cy = 0
 
-    for (x0, y0), (x1, y1) in zip(coordinates[:-2], coordinates[1:-1]):
+    for (x0, y0), (x1, y1) in zip(coordinates[:-1], coordinates[1:]):
         cross = x0 * y1 - x1 * y0
         area += cross
         cx += (x0 + x1) * cross
@@ -700,10 +707,14 @@ def get_polygon_centroid(
     cx /= 3 * area
     cy /= 3 * area
 
+    if accuracy:
+        cx = round(cx, accuracy)
+        cy = round(cy, accuracy)
+
     return cx, cy
 
 
-def get_geometry_centroid(wkt: str) -> tuple[float, float] | None:
+def get_geometry_centroid(wkt: str, accuracy: int | None = None) -> tuple[float, float] | None:
     """
     Gets the centroid of a geometry provided in well known text (WKT) format.
 
@@ -714,11 +725,14 @@ def get_geometry_centroid(wkt: str) -> tuple[float, float] | None:
         The centroid of the geometry as a coordinate pair.
     """
     if wkt.upper().startswith("POINT"):
-        return get_coordinates_from_wkt(wkt)
+        coordinates = get_coordinates_from_wkt(wkt)
+        if accuracy:
+            coordinates = tuple(round(i, accuracy) for i in coordinates)
+        return coordinates
     elif wkt.upper().startswith("LINESTRING"):
-        return get_linestring_centroid(get_coordinates_from_wkt(wkt))
+        return get_linestring_centroid(get_coordinates_from_wkt(wkt), accuracy=accuracy)
     elif wkt.upper().startswith("POLYGON"):
-        return get_polygon_centroid(get_coordinates_from_wkt(wkt))
+        return get_polygon_centroid(get_coordinates_from_wkt(wkt), accuracy=accuracy)
     else:
         return None
 
