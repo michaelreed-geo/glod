@@ -88,7 +88,7 @@ class Geometry:
                 Bounding box as (x_min, y_min, x_max, y_max) or None if the geometry is a Point.
         """
         coordinates = get_coordinates_from_wkt(self.to_wkt)
-        if isinstance(coordinates[0], tuple):
+        if isinstance(coordinates[0], tuple) or isinstance(coordinates[0], list):
             x, y = zip(*coordinates)
             x_min = min(x)
             x_max = max(x)
@@ -558,7 +558,7 @@ def coordinates_to_wkt(
     """
     output = None
     coordinates_str = flatten_coordinates_to_str(coordinates)
-    if isinstance(coordinates[0], tuple):
+    if isinstance(coordinates[0], tuple) or isinstance(coordinates[0], list):
         if len(coordinates) > 1 and coordinates[0] != coordinates[-1]:
             # line coordinates
             output = f"LINESTRING {coordinates_str}"
@@ -616,14 +616,14 @@ def transform_coordinates(
     transformer = Transformer.from_crs(in_crs, out_crs, always_xy=always_xy)
 
     # Transform coordinates
-    if isinstance(coordinates[0], tuple):  # linestring or polygon
+    if isinstance(coordinates[0], tuple) or isinstance(coordinates[0], list):  # linestring or polygon
         transformed = tuple(transformer.transform(x, y) for x, y in coordinates)
     else:  # point
         transformed = transformer.transform(*coordinates)
 
     # Optionally round
     if accuracy is not None:
-        if isinstance(transformed[0], tuple):
+        if isinstance(transformed[0], tuple) or isinstance(transformed[0], tuple):
             transformed = tuple(
                 (round(x, accuracy), round(y, accuracy)) for x, y in transformed
             )
