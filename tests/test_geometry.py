@@ -50,6 +50,26 @@ def test_bounds_to_polygon_wkt(bounds, wkt):
 
 
 @pytest.mark.parametrize(
+    "coordinates, segments",
+    [
+        # linestring type where coordinates[0] != coordinates[-1]
+        (
+            ((0.9, 0.1), (5.5, 5.3), (10.7, 10.5)),
+            (((0.9, 0.1), (5.5, 5.3)), ((5.5, 5.3), (10.7, 10.5)))
+        ),
+        # polygon type where coordinates[0] == coordinates[-1]
+        (
+            ((623, 200), (896, 150), (702, 180), (623, 200)),
+            (((623, 200), (896, 150)), ((896, 150), (702, 180)), ((702, 180), (623, 200)))
+        ),
+    ],
+)
+def test_coordinates_to_line_segments(coordinates, segments):
+    assert coordinates_to_line_segments(coordinates) == segments
+
+
+
+@pytest.mark.parametrize(
     "coordinates, wkt",
     [
         ((0, 0), "POINT (0 0)"),
@@ -64,6 +84,30 @@ def test_bounds_to_polygon_wkt(bounds, wkt):
 )
 def test_coordinates_to_wkt(coordinates, wkt):
     assert coordinates_to_wkt(coordinates) == wkt
+
+
+@pytest.mark.parametrize(
+    "geometry1, geometry2, result",
+    [
+        (
+            Geometry.from_wkt("Polygon ((0 0, 0 10, 10 10, 10 0, 0 0))"),
+            Geometry.from_wkt("Polygon ((5 5, 5 15, 15 15, 15 5, 5 5))"),
+            True
+        ),
+        (
+            Geometry.from_wkt("Polygon ((0 0, 0 10, 10 10, 10 0, 0 0))"),
+            Geometry.from_wkt("LineString (0 0, 20 20)"),
+            True
+        ),
+        (
+            Geometry.from_wkt("LineString (0 0, 10 10)"),
+            Geometry.from_wkt("LineString (20 20, 30 30)"),
+            False
+        )
+    ]
+)
+def test_do_bounds_intersect(geometry1, geometry2, result):
+    assert do_bounds_interesct(geometry1, geometry2) == result
 
 
 @pytest.mark.parametrize(
@@ -157,6 +201,41 @@ def test_get_coordinates_from_wkt(wkt, coordinates):
 
 
 @pytest.mark.parametrize(
+    "wkt, accuracy, centroid",
+    [
+        ("Point (5 5)", None, (5, 5)),
+        ("Point (20.312 8.89543", 2, (20.31, 8.90)),
+        ("LineString (-1 1, 1 2, 1 3, 3 3, 3 -1)", 3, (1.841, 1.717)),
+        ("Polygon ((0 0, 0 10, 10 10, 10 0, 0 0))", None, (5, 5)),
+        ("Polygon ((-1 1, 1 2, 1 3, 3 3, 3 -1, -1 1))", 3, (1.667, 1.185)),
+    ],
+)
+def test_get_geometry_centroid(wkt, accuracy, centroid):
+    assert get_geometry_centroid(wkt, accuracy) == centroid
+
+
+@pytest.mark.parametrize(
+    "coordinates, accuracy, centroid",
+    [
+        (((-1, 1), (1, 2), (1, 3), (3, 3), (3, -1)), 3, (1.841, 1.717))
+    ]
+)
+def test_get_linestring_centroid(coordinates, accuracy, centroid):
+    assert get_linestring_centroid(coordinates, accuracy) == centroid
+
+
+@pytest.mark.parametrize(
+    "coordinates, accuracy, centroid",
+    [
+        (((0, 0), (0, 10), (10, 10), (10, 0), (0, 0)), None, (5, 5)),
+        (((-1, 1), (1, 2), (1, 3), (3, 3), (3, -1), (-1, 1)), 3, (1.667, 1.185)),
+    ]
+)
+def test_get_polygon_centroid(coordinates, accuracy, centroid):
+    assert get_polygon_centroid(coordinates, accuracy) == centroid
+
+
+@pytest.mark.parametrize(
     "wkt_str, wkt_type",
     [
         ("point (0 0)", "Point"),
@@ -181,6 +260,17 @@ def test_get_wkt_type_from_str(wkt_str, wkt_type):
 def test_is_crs_valid(crs, validity):
     config.set_use_pyproj(True)
     assert is_crs_valid(crs) is validity
+
+
+@pytest.mark.parametrize(
+    "line, point, result",
+    [
+        (((0, 0), (10, 10)), (5, 5), True),
+        (((10, 10), (-30, -50)), (20, 15), False)
+    ]
+)
+def test_is_point_on_line_segment(line, point, result):
+    assert is_point_on_line_segment(line, point) == result
 
 
 @pytest.mark.parametrize(
