@@ -159,6 +159,10 @@ class Geometry:
         return get_wkt_type_from_str(self.to_wkt)
 
     @classmethod
+    def from_bounds(cls, bounds: tuple[float, float, float, float] | None = None, crs: CRSType = None):
+        return cls(wkt=bounds_to_polygon_wkt(bounds), crs=crs)
+
+    @classmethod
     def from_coordinates(
         cls,
         coordinates: tuple[float, float] | tuple[tuple[float, float]] | None = None,
