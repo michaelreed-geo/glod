@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from glod import FeatureCollection
+from glod import FeatureCollection, Feature, Geometry
 from glod.feature import (
     feature_collection_to_geojson,
     feature_to_geojson,
