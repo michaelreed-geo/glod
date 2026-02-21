@@ -69,7 +69,7 @@ def feature_collection_to_geojson(
     if crs is None:
         # construct dict of each crs used by features and count how often they occur
         found_crs = {}
-        for i in feature_collection.features:
+        for i in feature_collection:
             if i.geometry.crs not in found_crs:
                 found_crs[i.geometry.crs] = 0
             found_crs[i.geometry.crs] += 1
@@ -87,14 +87,14 @@ def feature_collection_to_geojson(
         target_crs = crs
 
     # transform feature to uniform target_crs
-    for feat in feature_collection.features:
+    for feat in feature_collection:
         if feat.geometry.crs != target_crs:
             # transform it to mode_crs and replace geometry of feature
             feat.geometry = feat.geometry.transform(target_crs)
 
     geojson = {
         "type": "FeatureCollection",
-        "features": [i.to_geojson for i in feature_collection.features],
+        "features": [i.to_geojson for i in feature_collection],
         "crs": {"type": "name", "properties": {"name": target_crs}},
     }
 
