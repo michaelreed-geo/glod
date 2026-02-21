@@ -159,7 +159,11 @@ class Geometry:
         return get_wkt_type_from_str(self.to_wkt)
 
     @classmethod
-    def from_bounds(cls, bounds: tuple[float, float, float, float] | None = None, crs: CRSType = None):
+    def from_bounds(
+        cls,
+        bounds: tuple[float, float, float, float] | None = None,
+        crs: CRSType = None,
+    ):
         return cls(wkt=bounds_to_polygon_wkt(bounds), crs=crs)
 
     @classmethod
@@ -616,7 +620,9 @@ def transform_coordinates(
     transformer = Transformer.from_crs(in_crs, out_crs, always_xy=always_xy)
 
     # Transform coordinates
-    if isinstance(coordinates[0], tuple) or isinstance(coordinates[0], list):  # linestring or polygon
+    if isinstance(coordinates[0], tuple) or isinstance(
+        coordinates[0], list
+    ):  # linestring or polygon
         transformed = tuple(transformer.transform(x, y) for x, y in coordinates)
     else:  # point
         transformed = transformer.transform(*coordinates)
@@ -718,7 +724,9 @@ def get_polygon_centroid(
     return cx, cy
 
 
-def get_geometry_centroid(wkt: str, accuracy: int | None = None) -> tuple[float, float] | None:
+def get_geometry_centroid(
+    wkt: str, accuracy: int | None = None
+) -> tuple[float, float] | None:
     """
     Gets the centroid of a geometry provided in well known text (WKT) format.
 
@@ -813,25 +821,24 @@ def check_segments_intersect(
     p1, q1 = line1
     p2, q2 = line2
 
-    orientation1 = get_points_orientation(p1, p2, q1)
-    orientation2 = get_points_orientation(p1, p2, q2)
-    orientation3 = get_points_orientation(q1, q2, p1)
-    orientation4 = get_points_orientation(q1, q2, p2)
+    orientation1 = get_points_orientation(p1, q1, p2)
+    orientation2 = get_points_orientation(p1, q1, q2)
+    orientation3 = get_points_orientation(p2, q2, p1)
+    orientation4 = get_points_orientation(p2, q2, q1)
 
     if orientation1 != orientation2 and orientation3 != orientation4:
         return True
 
     # check if collinear
-    if orientation1 == 0 and is_point_on_line_segment(line=(p1, p2), point=q1):
+    if orientation1 == 0 and is_point_on_line_segment((p1, q1), p2):
         return True
-    if orientation2 == 0 and is_point_on_line_segment(line=(p1, p2), point=q2):
+    if orientation2 == 0 and is_point_on_line_segment((p1, q1), q2):
         return True
-    if orientation3 == 0 and is_point_on_line_segment(line=(q1, q2), point=p1):
+    if orientation3 == 0 and is_point_on_line_segment((p2, q2), p1):
         return True
-    if orientation4 == 0 and is_point_on_line_segment(line=(q1, q2), point=p2):
+    if orientation4 == 0 and is_point_on_line_segment((p2, q2), q1):
         return True
 
-    # no intersection
     return False
 
 
