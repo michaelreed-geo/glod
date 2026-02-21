@@ -36,6 +36,16 @@ class FeatureCollection:
     def __init__(self, features: list[Feature]):
         self.features = features
 
+    def __iter__(self):
+        for feature in self.features:
+            yield feature
+
+    def __getitem__(self, i):
+        return self.features[i]
+
+    def __len__(self):
+        return len(self.features)
+
     def to_geojson(self, path: str | None = None, crs: CRSType = None) -> dict:
         return feature_collection_to_geojson(self, path, crs)
 
