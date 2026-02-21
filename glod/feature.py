@@ -111,14 +111,20 @@ def geojson_to_feature_collection(geojson: str | dict) -> list[Feature]:
         # read from file
         with open(geojson, "r") as f:
             geojson = json.load(f)
-    # TODO: read geojson from json string
+    elif isinstance(geojson, str):
+        # load from geojson string
+        geojson = json.loads(geojson)
+
+    # if geojson is dict, no need to edit format!
+
     crs = get_crs_from_geojson(geojson)
     features = [Feature.from_geojson(i, crs) for i in geojson["features"]]
     return features
 
 
-def get_dict_value_recursive(dict_: dict, keys: str) -> Any:
+def get_dict_value_recursive(dict_: dict, keys: list[str]) -> Any:
     finished = False
+    output = None  # default
     while not finished:
         output = dict_
         for i in keys:
