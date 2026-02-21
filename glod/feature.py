@@ -51,7 +51,7 @@ class FeatureCollection:
 
     @classmethod
     def from_geojson(cls, geojson: str | dict):
-        return cls(geojson_to_feature_collection(geojson))
+        return cls(geojson_to_feature_list(geojson))
 
 
 def feature_to_geojson(wkt: str, attributes: dict):
@@ -106,14 +106,16 @@ def feature_collection_to_geojson(
     return geojson
 
 
-def geojson_to_feature_collection(geojson: str | dict) -> list[Feature]:
-    if os.path.exists(geojson):
-        # read from file
-        with open(geojson, "r") as f:
-            geojson = json.load(f)
-    elif isinstance(geojson, str):
-        # load from geojson string
-        geojson = json.loads(geojson)
+def geojson_to_feature_list(geojson: str | dict) -> list[Feature]:
+    # TODO: add support pathlib
+    if isinstance(geojson, str):
+        if os.path.exists(geojson):
+            # read from file
+            with open(geojson, "r") as f:
+                geojson = json.load(f)
+        else:
+            # load from geojson string
+            geojson = json.loads(geojson)
 
     # if geojson is dict, no need to edit format!
 
@@ -123,15 +125,33 @@ def geojson_to_feature_collection(geojson: str | dict) -> list[Feature]:
 
 
 def get_dict_value_recursive(dict_: dict, keys: list[str]) -> Any:
+    """
+    Crawl recursively through a dict to return a target value.
+
+    Args:
+        dict_: the structure to crawl.
+        keys: the keys or list indices to extract the value from
+
+    Returns:
+        The value of dict_ at the cumulative keys or indices.
+    """
     finished = False
     output = None  # default
     while not finished:
         output = dict_
         for i in keys:
-            if i in output:
-                output = output[i]
-            else:
-                raise KeyError(f"{i} not a valid key in {output}.")
+            # if output is dict and i is key
+            if isinstance(output, dict):
+                if i in output:
+                    output = output[i]
+                else:
+                    raise KeyError(f"{i} not a valid key in {output}.")
+            # if output is list and i is index
+            elif isinstance(output, list) and isinstance(i, int):
+                try:
+                    output = output[i]
+                except IndexError as exc:
+                    raise exc
         finished = True
     return output
 
