@@ -57,16 +57,16 @@ collection = FeatureCollection(all_features)
 # write to a geojson
 geojson = collection.to_geojson('api_data.geojson')
 
-geojson
-# {'type': 'FeatureCollection', 'features': [{'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [12, 34]}, ...]}
+print(geojson)
+# {'type': 'FeatureCollection', 'features': [{'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [12.0, 34.0]}, ...]}
 
 # iterate through features and do _whatever_
 for feature in collection:
     print(feature.attributes['id'], feature.geometry.to_wkt, feature.geometry.crs)
     ...
 
-# 'point1' 'Point (12, 34)' 'EPSG:27700'
-# 'point2' 'Point (56, 78)' 'EPSG:27700' 
+# point1 POINT (12.0, 34.0) EPSG:27700
+# point2 POINT (56.0, 78.0) EPSG:27700 
 ```
 
 ### Geometry processing
@@ -78,6 +78,6 @@ from glod import Geometry
 geometry1 = Geometry.from_wkt(wkt="Polygon ((0 0, 0 10, 10 10, 10 0, 0 0))", crs="EPSG:3857")
 geometry2 = Geometry.from_bounds(bounds=(5, 5, 15, 15), crs="EPSG:3857")
 
-geometry1.intersects(geometry2)
+print(geometry1.intersects(geometry2))
 # True
 ```
