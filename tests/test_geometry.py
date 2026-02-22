@@ -510,10 +510,95 @@ def test_geometry_type(geometry, expected):
 
 
 @pytest.mark.parametrize(
-    "bounds, expected",
+    "bounds, crs, expected",
     [
-        ((0, 0, 10, 10), "POLYGON ((0.0 0.0, 0.0 10.0, 10.0 10.0, 10.0 0.0, 0.0 0.0))")
+        # bounds as tuple
+        ((0, 0, 10, 10), "EPSG:4326", "POLYGON ((0.0 0.0, 0.0 10.0, 10.0 10.0, 10.0 0.0, 0.0 0.0))"),
+        # bounds as list
+        ([0, 20, 10, 50], "EPSG:1", "POLYGON ((0.0 20.0, 0.0 50.0, 10.0 50.0, 10.0 20.0, 0.0 20.0))")
     ]
 )
-def test_geometry_from_bounds(bounds, expected):
-    assert Geometry.from_bounds(bounds).to_wkt == expected
+def test_geometry_from_bounds(bounds, crs, expected):
+    geometry = Geometry.from_bounds(bounds, crs)
+    assert geometry.to_wkt == expected
+    assert geometry.crs == crs
+
+
+@pytest.mark.parametrize(
+    "coordinates, crs, expected",
+    [
+        # coordinates as tuple
+        (((0, 0), (100, 100), (-100, 0), (0, 0)), "EPSG:0", "POLYGON ((0.0 0.0, 100.0 100.0, -100.0 0.0, 0.0 0.0))"),
+        # coordinates as list
+        ([[0, 0], [5, 5], [10, 20]], "EPSG:1234", "LINESTRING (0.0 0.0, 5.0 5.0, 10.0 20.0)")
+    ]
+)
+def test_geometry_from_coordinates(coordinates, crs, expected):
+    geometry = Geometry.from_coordinates(coordinates, crs)
+    assert geometry.to_wkt == expected
+    assert geometry.crs == crs
+
+
+@pytest.mark.parametrize(
+    "geojson, crs, expected",
+    [
+        ({"type": "Point", "coordinates": [10, 5]}, "EPSG:3857", "POINT (10.0 5.0)"),
+        ({"type": "LineString", "coordinates": [[0, 0], [-10, -50]]}, "EPSG:1234", "LINESTRING (0.0 0.0, -10.0 -50.0)"),
+        ({"type": "Polygon", "coordinates": [[[50, 50], [20, 20], [0, 50], [50, 50]]]}, "EPSG:4326", "POLYGON ((50.0 50.0, 20.0 20.0, 0.0 50.0, 50.0 50.0))")
+    ]
+)
+def test_geometry_from_geojson(geojson, crs, expected):
+    geometry = Geometry.from_geojson(geojson, crs)
+    assert geometry.to_wkt == expected
+    assert geometry.crs == crs
+
+
+# make a dummy generic python object that implements the __geo_interface__ protocol
+class DummyObj:
+    def __init__(self, type_, bounds, coordinates):
+        self.type = type_
+        self.bounds = bounds
+        self.coordinates = coordinates
+    @property
+    def __geo_interface__(self):
+        geo = {
+            "type": self.type,
+            "bbox": self.bounds,
+            "coordinates": self.coordinates
+        }
+        return geo
+
+
+@pytest.mark.parametrize(
+    "type_, bounds, coordinates, crs, expected",
+    [
+        ("Point", None, (5, 8), "EPSG:1", "POINT (5.0 8.0)"),
+        ("LineString", [0, 0, 10, 10], [[0, 0], [10, 10]], "EPSG:7", "LINESTRING (0.0 0.0, 10.0 10.0)")
+    ]
+)
+def test_geometry_from_object(type_, bounds, coordinates, crs, expected):
+    an_object = DummyObj(type_, bounds, coordinates)
+    geometry = Geometry.from_object(an_object, crs)
+    assert geometry.to_wkt == expected
+    assert geometry.crs == crs
+
+
+def test_geometry_from_object_unsupported_type():
+    an_object = DummyObj("MultiPoint", None, [[[0, 0], [1, 1]], [2, 2]])
+    with pytest.raises(ValueError, match="Unsupported geometry type MultiPoint"):
+        Geometry.from_object(an_object)
+
+
+@pytest.mark.parametrize(
+    "wkt, crs, expected",
+    [
+        ("Point (5 10)", "EPSG:123", (5.0, 10.0)),
+        ("LINESTRING (12 34, 56 78)", "EPSG:3857", ((12.0, 34.0), (56.0, 78.0))),
+        ("Polygon ((0 0, 10 10, 10 0, 0 0))", None, ((0, 0), (10, 10), (10, 0), (0, 0)))
+    ]
+)
+def test_geometry_from_wkt(wkt, crs, expected):
+    geometry = Geometry.from_wkt(wkt, crs)
+    assert geometry.coordinates == expected
+    assert geometry.crs == crs
+
