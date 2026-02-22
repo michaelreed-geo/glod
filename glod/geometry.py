@@ -302,8 +302,11 @@ class Geometry:
         return self.from_coordinates(transformed_coordinates, crs=out_crs)
 
     def _wkt_is_valid(self, wkt: str) -> bool:
-        wkt_type = wkt.split("(")[0].strip().upper()
-        return is_wkt_string_valid(wkt, wkt_type)
+        if wkt:
+            wkt_type = wkt.split("(")[0].strip().upper()
+            return is_wkt_string_valid(wkt, wkt_type)
+        else:
+            return False
 
 
 def get_coordinates_from_wkt(
@@ -499,20 +502,21 @@ def geojson_to_wkt(geojson: dict) -> str:
     """
     output = None  # default in case geojson is null geometry
     if geojson is not None:
-        match geojson["type"]:
-            # TODO: handle case where geojson has type but no coordinates?
-            case "Point":
-                output = f"POINT {flatten_coordinates_to_str(geojson['coordinates'])}"
-            case "LineString":
-                output = (
-                    f"LINESTRING {flatten_coordinates_to_str(geojson['coordinates'])}"
-                )
-            case "Polygon":
-                output = (
-                    f"POLYGON ({flatten_coordinates_to_str(geojson['coordinates'][0])})"
-                )
-            case _:
-                output = None
+        if isinstance(geojson["coordinates"], list) or isinstance(geojson["coordinates"], tuple):
+            match geojson["type"]:
+                case "Point":
+                    output = f"POINT {flatten_coordinates_to_str(geojson['coordinates'])}"
+                case "LineString":
+                    output = (
+                        f"LINESTRING {flatten_coordinates_to_str(geojson['coordinates'])}"
+                    )
+                case "Polygon":
+                    output = (
+                        f"POLYGON ({flatten_coordinates_to_str(geojson['coordinates'][0])})"
+                    )
+                case _:
+                    raise ValueError(f"Unsupported geometry type {geojson['type']}.")
+
     return output
 
 
