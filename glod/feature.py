@@ -23,6 +23,12 @@ class Feature:
     def attributes(self):
         return self._attributes
 
+    def update_attribute(self, key, value):
+        self._attributes[key] = value
+
+    def delete_attribute(self, key):
+        del self._attributes[key]
+
     @classmethod
     def from_geojson(cls, geojson: dict, crs: CRSType = None):
         geometry = Geometry.from_geojson(geojson["geometry"], crs)
@@ -58,6 +64,12 @@ class FeatureCollection:
     @property
     def metadata(self):
         return self._metadata
+
+    def update_metadata(self, key, value):
+        self._metadata[key] = value
+
+    def delete_metadata(self, key):
+        del self._metadata[key]
 
     def to_geojson(self, path: str | None = None, crs: CRSType = None) -> dict:
         return feature_collection_to_geojson(self, path, crs)
@@ -117,9 +129,9 @@ def feature_collection_to_geojson(
     return geojson
 
 
-def geojson_to_feature_list(geojson: str | dict) -> list[Feature]:
+def geojson_to_feature_list(geojson: str | os.PathLike | dict) -> list[Feature]:
     # TODO: add support pathlib
-    if isinstance(geojson, str):
+    if not isinstance(geojson, dict):
         if os.path.exists(geojson):
             # read from file
             with open(geojson, "r") as f:
