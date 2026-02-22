@@ -29,73 +29,55 @@ The goal of this project, as the name suggests, is to keep the number of externa
 
 ## Usage
 
-Typical usage is for handling GIS data returned by APIs and turning it into something useful and consistent for onward usage.
+Typical usage is for handling spatial data returned by APIs in non-native GIS forms and turning it into something useful and consistent for onward usage.
 
-Assume an API returns a json type object which contains the bounds of a rectangle geometry along with
-some attributes you want to retain. The example below shows how you would use `glod` to interact with these data.
+### Data formatting
 
 ```python
-from glod import Geometry, Feature
+from glod import Feature, FeatureCollection, Geometry
 
-# extent as x_min, y_min, x_max, y_max, the API returns spatial data in CRS EPSG:3857
-api_result = {'extent': [50, 1000, 200, 1100], 'name': 'map', 'date': 2005}
+# assume some data returned by an API
+data = [
+    {'id': 'point1', 'easting': 12, 'northing': 34, 'date': 2021},
+    {'id': 'point2', 'easting': 56, 'northing': 78, 'date': 2023}
+]
+api_crs = 'EPSG:27700'  # assume the coordinate reference system of the API is known
 
-# create a glod Geometry to store the geometry
-geometry = Geometry.from_bounds(bounds=api_result['extent'], crs='EPSG:3857')
-
-print(geometry.type)
-# 'Polygon'
-
-print(geometry.coordiates)
-# ((50.0, 1000.0), (50.0, 1100.0), (200.0, 1100.0), (200.0, 1000.0), (50.0, 1000.0))
-
-# store the attributes for the result along with the geometry using a Feature
-feature = Feature(geometry, attributes={'Name': api_result['name'], 'Date': api_result['date']})
-
-print(feature.attributes)
-# {'Name': 'map', 'Date': 2005}
-```
-
-Now assume your API query returns a list of results, with geometry as point coordinates and the CRS as EPSG:27700.
-You can collect these results into a `FeatureCollection` object.
-```python
-from glod import FeatureCollection
-
-api_result = [{'point': [0, 0], 'id': 'point1'}, {'point': [100, 50], 'id': 'point2'}]
+# turn each item of data into a glod Feature with geometry and attributes
 all_features = []
-for i in api_result:
-    # turn each list item into a glod Feature
-    geometry = Geometry.from_coordinates(i['point'], 'EPSG:27700')
-    feature = Feature(geometry, attributes={'id': i['id']})
+for item in data:
+    geometry = Geometry.from_coordinates(coordinates=(item['easting'], item['northing']), crs=api_crs)
+    attributes = {'id': item['id'], 'date': item['date']}
+    feature = Feature(geometry, attributes)
     all_features.append(feature)
 
-# collate all features into a collection
+# collate features as a FeatureCollection
 collection = FeatureCollection(all_features)
 
-print(len(collection))
-# 2
+# write to a geojson
+geojson = collection.to_geojson('api_data.geojson')
 
-# you can also index features within a collection, e.g.
-print(collection[0].geometry.coordinates)
-# [0, 0]
+geojson
+# {'type': 'FeatureCollection', 'features': [{'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [12, 34]}, ...]}
 
-print(collection[1].attributes['id'])
-# 'point2'
+# iterate through features and do _whatever_
+for feature in collection:
+    print(feature.attributes['id'], feature.geometry.to_wkt, feature.geometry.crs)
+    ...
+
+# 'point1' 'Point (12, 34)' 'EPSG:27700'
+# 'point2' 'Point (56, 78)' 'EPSG:27700' 
 ```
-You can easily export a `FeatureCollection` to a geojson too, including writing to a file.
+
+### Geometry processing
+It can also be used as a lightweight means of checking for geometry intersections.
 
 ```python
-# turn the collection into a geojson structure
-geojson = collection.to_geojson()
+from glod import Geometry
 
-print(geojson)
-# {'type': 'FeatureCollection', 'features': [{'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [0, 0]}, ...
+geometry1 = Geometry.from_wkt(wkt="Polygon ((0 0, 0 10, 10 10, 10 0, 0 0))", crs="EPSG:3857")
+geometry2 = Geometry.from_bounds(bounds=(5, 5, 15, 15), crs="EPSG:3857")
 
-# write the collection to a .geojson file
-collection.to_geojson('api_result.geojson')
-
-# write to a .geojson file but transform to a different CRS
-collection.to_geojson('api_result.geojson', crs='EPSG:4326')
+geometry1.intersects(geometry2)
+# True
 ```
-For more details on properties and methods for `Geometry`, `Feature` and `FeatureCollection` objects,
-refer to the source code docstrings.
