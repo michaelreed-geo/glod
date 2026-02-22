@@ -8,7 +8,7 @@ from .geometry import CRSType, Geometry, wkt_to_geojson
 class Feature:
     def __init__(self, geometry: Geometry, attributes: dict):
         self.geometry = geometry
-        self.attributes = attributes
+        self._attributes = attributes
 
     @property
     def __geo_interface__(self) -> dict:
@@ -18,6 +18,10 @@ class Feature:
             "properties": self.attributes,
         }
         return geo
+
+    @property
+    def attributes(self):
+        return self._attributes
 
     @classmethod
     def from_geojson(cls, geojson: dict, crs: CRSType = None):
@@ -33,8 +37,9 @@ class Feature:
 
 
 class FeatureCollection:
-    def __init__(self, features: list[Feature]):
+    def __init__(self, features: list[Feature], metadata: dict | None = None):
         self.features = features
+        self._metadata = metadata
 
     def __iter__(self):
         for feature in self.features:
@@ -46,12 +51,16 @@ class FeatureCollection:
     def __len__(self):
         return len(self.features)
 
-    def to_geojson(self, path: str | None = None, crs: CRSType = None) -> dict:
-        return feature_collection_to_geojson(self, path, crs)
-
     @classmethod
     def from_geojson(cls, geojson: str | dict):
         return cls(geojson_to_feature_list(geojson))
+
+    @property
+    def metadata(self):
+        return self._metadata
+
+    def to_geojson(self, path: str | None = None, crs: CRSType = None) -> dict:
+        return feature_collection_to_geojson(self, path, crs)
 
 
 def feature_to_geojson(wkt: str, attributes: dict):
