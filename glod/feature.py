@@ -67,6 +67,8 @@ def feature_collection_to_geojson(
     feature_collection: FeatureCollection, path: str | None = None, crs: CRSType = None
 ) -> dict:
     if crs is None:
+        # TODO: if any geometry has None for CRS, the entire collection cannot be transformed
+        #  warn user if this is the case
         # construct dict of each crs used by features and count how often they occur
         found_crs = {}
         for i in feature_collection:
