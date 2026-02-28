@@ -106,3 +106,11 @@ collection.to_csv("data.csv")
 # read back, supplying the CRS since CSV has no standard CRS field
 collection2 = FeatureCollection.from_csv("data.csv", crs="EPSG:27700")
 ```
+
+### Coordinate Reference System (CRS) transforms
+
+Transformation is handled by _pyproj_. Because this is an optional dependency, it must
+be internally enabled within _glod_ by calling `glod.config.set_use_pyproj(True)`
+before running your code.
+
+By default _pyproj_ will be disabled every run time unless specifically enabled.
