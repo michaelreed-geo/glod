@@ -10,10 +10,11 @@ packages = ["glod"]
 
 [project.optional-dependencies]
 transforms = [
-    "pyproj>=3.7.2"
+    "pyproj>=3.7.0"
 ]
 
 [dependency-groups]
 test = [
-    "pytest>=9.0.2"
+    "pytest>=9.0.0",
+    "pytest-cov>=7.0.0"
 ]
