@@ -336,7 +336,6 @@ class TestFromGeoJSON:
         with pytest.raises(TypeError):
             Point.from_geojson({"type": "LineString", "coordinates": [[0, 0], [1, 1]]})
 
-
 # ---------------------------------------------------------------------------
 # from_wkt
 # ---------------------------------------------------------------------------
@@ -493,7 +492,10 @@ class TestFromCoordinates:
     def test_multi_type_error_suggests_singlepart(self):
         with pytest.raises(TypeError, match="Point.from_coordinates"):
             MultiPoint.from_coordinates([[0, 0]])
-
+    
+    def test_non_tuple_list_invalid_coordinates(self):
+        with pytest.raises(ValueError):
+            Geometry.from_coordinates("invalid input")
 
 # ---------------------------------------------------------------------------
 # from_bounds
