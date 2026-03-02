@@ -127,8 +127,8 @@ def _iter_vertices(coords, depth: int):
 def _parse_wkt_coords(token: str, depth: int) -> list:
     """Recursively parse a WKT coordinate token into a nested list.
 
-    The ``depth`` parameter mirrors the ``_coord_depth`` convention so that the resulting structure is ready to
-    pass directly to :meth:`Geometry.from_geojson`.
+    The ``depth`` parameter mirrors the ``_coord_depth`` convention so that the
+    resulting structure is ready to pass directly to :meth:`Geometry.from_geojson`.
 
     * ``depth=0`` -- ``"x y z"``            -> ``[x, y, z]``
     * ``depth=1`` -- ``"x y, x y"``         -> ``[[x, y], [x, y]]``
@@ -912,7 +912,7 @@ class Geometry(ABC):
             ls = Geometry.from_wkt("LINESTRING (0 0, 1 1, 2 0)")
             assert isinstance(ls, LineString)
         """
-        wkt = wkt.strip()
+        wkt = wkt.upper().strip()
         match = re.match(r"^([A-Z]+)\s*\((.+)\)$", wkt, re.DOTALL)
         if not match:
             raise ValueError(f"Invalid or unrecognised WKT: {wkt!r}")
