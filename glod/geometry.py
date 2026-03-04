@@ -4,25 +4,6 @@ This module provides an immutable geometry class hierarchy modelling the six Geo
 geometry types (Point, LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon).
 All classes share a common ABC (``Geometry``) that handles construction, validation,
 serialisation, CRS-aware coordinate transformation, and geometric intersection testing.
-
-Typical usage::
-
-    from glod.geometry import Geometry, Point, LineString, Polygon
-
-    # Construct from GeoJSON
-    p = Point.from_geojson({"type": "Point", "coordinates": [0.0, 51.5]},
-                           crs="epsg:4326")
-
-    # Construct from WKT
-    ls = Geometry.from_wkt("LINESTRING (0 0, 1 1, 2 0)")
-
-    # Infer type from coordinate structure - limited to single part geometry only
-    poly = Geometry.from_coordinates([[[0, 0], [1, 0], [1, 1], [0, 0]]])
-
-    # Intersection test - must be matching CRS or set glod.config.set_use_pyproj(True)
-    a = LineString.from_wkt("LINESTRING (0 0, 2 2)", crs="epsg:27700")
-    b = LineString.from_wkt("LINESTRING (0 2, 2 0)", crs="epsg:27700")
-    a.intersects(b)
 """
 
 from __future__ import annotations
