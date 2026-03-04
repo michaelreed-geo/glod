@@ -1,187 +1,274 @@
-import json
-import os
-from typing import Any
+"""Feature type for the glod package.
 
-from .geometry import CRSType, Geometry, wkt_to_geojson
+This module provides a container class that pairs geometry with attribute data,
+mirroring the GeoJSON ``Feature`` structures:
+
+* :class:`Feature` — a single :class:`~glod.geometry.Geometry` paired with a flat
+    ``dict`` of attribute values.
+
+The class supports reading from and writing to GeoJSON (dict, raw JSON string, or file
+path).
+"""
+
+from __future__ import annotations
+
+from .geometry import CrsType, Geometry
 
 
 class Feature:
-    def __init__(self, geometry: Geometry, attributes: dict):
-        self.geometry = geometry
-        self._attributes = attributes
+    """A geometry paired with a dict of attributes.
+
+    Models a single GeoJSON ``Feature`` object. Both :attr:`geometry` and
+    :attr:`attributes` are mutable via validated property setters: assigning an
+    incompatible type raises :exc:`TypeError` immediately, keeping the instance in a
+    consistent state at all times.
+
+    The ``__geo_interface__`` property makes :class:`Feature` compatible with any
+    library that implements the __geo_interface__ protocol (shapely, geopandas, etc.).
+
+    Note:
+        :class:`Feature` uses ``__slots__`` to reduce per-instance memory overhead and
+        prevent accidental creation of undeclared attributes.
+
+    Example::
+
+        from glod.geometry import Point
+        p = Point.from_wkt("POINT (530000 180000)", crs="epsg:27700")
+        f = Feature(p, {"name": "Edinburgh", "pop": 530000})
+        print(f)  # Feature(type='Point', attributes=['name', 'pop'])
+    """
+
+    __slots__ = ("_geometry", "_attributes")
+
+    def __init__(self, geometry: Geometry, attributes: dict | None = None):
+        """Initialise a Feature with a geometry and optional attributes.
+
+        Args:
+            geometry: The spatial component of the feature. Must be a
+                :class:`~glod.geometry.Geometry` instance.
+            attributes: A flat ``dict`` of attribute name/value pairs.
+                Defaults to an empty dict when ``None``. The dict is copied on
+                assignment so later changes to the original do not affect the feature.
+
+        Raises:
+            TypeError: If *geometry* is not a :class:`~glod.geometry.Geometry` instance,
+                or if *attributes* is provided but is not a ``dict``.
+
+        Example::
+
+            from glod.geometry import LineString
+            ls = LineString.from_wkt("LINESTRING (0 0, 1 1)", crs="epsg:27700")
+            f = Feature(ls, {"road_class": "A"})
+        """
+        self.geometry = geometry  # via setter
+        self.attributes = attributes if attributes is not None else {}  # via setter
+
+    def __repr__(self) -> str:
+        """Return a concise developer-readable string representation.
+
+        Returns:
+            A string of the form
+            ``"Feature(type='Point', attributes=['name', 'pop'])"``.
+        """
+        return (
+            f"Feature(type={self.geometry.type.value!r}, "
+            f"attributes={list(self.attributes.keys())})"
+        )
+
+    def __eq__(self, other: object) -> bool:
+        """Return ``True`` if *other* has identical geometry and attributes.
+
+        Geometry equality is determined by comparing the GeoJSON ``dict``
+        representations (type, coordinates, and CRS stored on the geometry object).
+        Attribute equality uses standard ``dict`` comparison.
+
+        Args:
+            other: The object to compare against.
+
+        Returns:
+            ``True`` if *other* is a :class:`Feature` with the same geometry and
+            attributes; ``NotImplemented`` if *other* is not a :class:`Feature`.
+        """
+        if not isinstance(other, Feature):
+            return NotImplemented
+        return (
+            self.geometry.geojson == other.geometry.geojson
+            and self.attributes == other.attributes
+        )
+
+    # ---- geometry property ----
+
+    @property
+    def geometry(self) -> Geometry:
+        """The spatial component of this feature.
+
+        Returns:
+            The :class:`~glod.geometry.Geometry` instance associated with
+            this feature.
+        """
+        return self._geometry
+
+    @geometry.setter
+    def geometry(self, value: Geometry) -> None:
+        """Set the geometry, validating that it is a :class:`~glod.geometry.Geometry`.
+
+        Args:
+            value: The replacement geometry.
+
+        Raises:
+            TypeError: If *value* is not a
+                :class:`~glod.geometry.Geometry` instance.
+        """
+        if not isinstance(value, Geometry):
+            raise TypeError(
+                f"geometry must be a Geometry instance, got {type(value).__name__!r}."
+            )
+        self._geometry = value
+
+    # ---- attributes property ----
+
+    @property
+    def attributes(self) -> dict:
+        """The attribute dictionary for this feature.
+
+        Returns:
+            A ``dict`` mapping attribute names to their values. This is the live
+            internal dict; mutating it in-place affects the feature.
+        """
+        return self._attributes
+
+    @attributes.setter
+    def attributes(self, value: dict) -> None:
+        """Set the attributes dict, validating the type and copying the value.
+
+        The provided dict is shallow-copied on assignment so subsequent changes to the
+        original object do not affect the feature.
+
+        Args:
+            value: A ``dict`` of attribute name/value pairs.
+
+        Raises:
+            TypeError: If *value* is not a ``dict``.
+        """
+        if not isinstance(value, dict):
+            raise TypeError(f"attributes must be a dict, got {type(value).__name__!r}.")
+        self._attributes = dict(value)
+
+    # ---- geo interface ----
 
     @property
     def __geo_interface__(self) -> dict:
-        geo = {
+        """GeoJSON Feature dict, conforming to the ``__geo_interface__`` protocol.
+
+        Returns a dict with ``"type": "Feature"``, a ``"geometry"`` key containing the
+        geometry's own ``__geo_interface__`` dict, and a ``"properties"`` key containing
+        :attr:`attributes`.
+
+        Returns:
+            A GeoJSON-compatible ``Feature`` dict.
+        """
+        return {
             "type": "Feature",
             "geometry": self.geometry.__geo_interface__,
             "properties": self.attributes,
         }
-        return geo
 
-    @property
-    def attributes(self):
-        return self._attributes
-
-    def update_attribute(self, key, value):
-        self._attributes[key] = value
-
-    def delete_attribute(self, key):
-        del self._attributes[key]
+    # ---- constructors ----
 
     @classmethod
-    def from_geojson(cls, geojson: dict, crs: CRSType = None):
-        geometry = Geometry.from_geojson(geojson["geometry"], crs)
-        properties = {}
-        if "properties" in geojson:
-            properties = geojson["properties"]
-        return cls(geometry, properties)
+    def from_geojson(cls, geojson: dict, crs: CrsType = None) -> Feature:
+        """Construct a :class:`Feature` from a GeoJSON Feature dict.
 
-    @property
+        CRS is not part of the GeoJSON specification and must be passed
+        explicitly if known. When called from
+        :meth:`FeatureCollection.from_geojson`, the collection-level CRS is
+        forwarded here automatically.
+
+        Args:
+            geojson: A dict with ``"type": "Feature"``, a ``"geometry"`` key
+                containing a valid GeoJSON geometry dict, and an optional
+                ``"properties"`` key.
+            crs: CRS to assign to the parsed geometry.
+                Defaults to ``None``.
+
+        Returns:
+            A new :class:`Feature` instance.
+
+        Raises:
+            ValueError: If the ``"type"`` field is not ``"Feature"``, or if
+                the ``"geometry"`` key is absent or ``None``.
+
+        Example::
+
+            f = Feature.from_geojson({
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [1.0, 2.0]},
+                "properties": {"name": "test"},
+            }, crs="epsg:27700")
+        """
+        if geojson.get("type") != "Feature":
+            raise ValueError(
+                f"Expected a GeoJSON Feature, got type {geojson.get('type')!r}."
+            )
+        if "geometry" not in geojson or geojson["geometry"] is None:
+            raise ValueError("Feature has no geometry.")
+        geometry = Geometry.from_geojson(geojson["geometry"], crs=crs)
+        attributes = dict(geojson.get("properties") or {})
+        return cls(geometry, attributes)
+
+    @classmethod
+    def from_wkt(
+        cls, wkt: str, attributes: dict | None = None, crs: CrsType = None
+    ) -> Feature:
+        """Construct a :class:`Feature` from a WKT geometry string.
+
+        Args:
+            wkt: A Well-Known Text geometry string, e.g. ``"POINT (530000 180000)"``.
+                attributes: Optional attribute dict.
+                Defaults to an empty dict when ``None``.
+            crs: CRS to assign to the parsed geometry.
+                Defaults to ``None``.
+
+        Returns:
+            A new :class:`Feature` instance.
+
+        Raises:
+            ValueError: If *wkt* is not a valid WKT string or its geometry type is
+                unrecognised.
+
+        Example::
+
+            f = Feature.from_wkt(
+                "LINESTRING (0 0, 1 1)",
+                attributes={"name": "route_1"},
+                crs="epsg:27700",
+            )
+        """
+        geometry = Geometry.from_wkt(wkt, crs=crs)
+        return cls(geometry, attributes)
+
+    # ---- serialisation ----
+
     def to_geojson(self) -> dict:
-        return feature_to_geojson(self.geometry.to_wkt, self.attributes)
+        """Return a GeoJSON Feature dict.
 
+        CRS is *not* included in the output because it is not part of the GeoJSON
+        Feature specification; CRS is managed at the :class:`FeatureCollection` level.
 
-class FeatureCollection:
-    def __init__(self, features: list[Feature], metadata: dict | None = None):
-        self.features = features
-        self._metadata = metadata
+        Returns:
+            A plain ``dict`` with keys ``"type"``, ``"geometry"``, and ``"properties"``,
+            suitable for JSON serialisation.
 
-    def __iter__(self):
-        for feature in self.features:
-            yield feature
+        Example::
 
-    def __getitem__(self, i):
-        return self.features[i]
-
-    def __len__(self):
-        return len(self.features)
-
-    @classmethod
-    def from_geojson(cls, geojson: str | dict):
-        return cls(geojson_to_feature_list(geojson))
-
-    @property
-    def metadata(self):
-        return self._metadata
-
-    def update_metadata(self, key, value):
-        self._metadata[key] = value
-
-    def delete_metadata(self, key):
-        del self._metadata[key]
-
-    def to_geojson(self, path: str | None = None, crs: CRSType = None) -> dict:
-        return feature_collection_to_geojson(self, path, crs)
-
-
-def feature_to_geojson(wkt: str, attributes: dict):
-    output = {
-        "type": "Feature",
-        "geometry": wkt_to_geojson(wkt),
-        "properties": attributes,
-    }
-    return output
-
-
-def feature_collection_to_geojson(
-    feature_collection: FeatureCollection, path: str | None = None, crs: CRSType = None
-) -> dict:
-    if crs is None:
-        # TODO: if any geometry has None for CRS, the entire collection cannot be transformed
-        #  warn user if this is the case
-        # construct dict of each crs used by features and count how often they occur
-        found_crs = {}
-        for i in feature_collection:
-            if i.geometry.crs not in found_crs:
-                found_crs[i.geometry.crs] = 0
-            found_crs[i.geometry.crs] += 1
-
-        if len(found_crs) > 1:
-            # FeatureCollection contains multiple CRS, transform to the most common
-            target_crs = ""
-            crs_count = 0
-            for crs, count in found_crs:
-                if count > crs_count:
-                    target_crs = crs
-        else:
-            target_crs = list(found_crs.keys())[0]
-    else:
-        target_crs = crs
-
-    # transform feature to uniform target_crs
-    for feat in feature_collection:
-        if feat.geometry.crs != target_crs:
-            # transform it to mode_crs and replace geometry of feature
-            feat.geometry = feat.geometry.transform(target_crs)
-
-    geojson = {
-        "type": "FeatureCollection",
-        "features": [i.to_geojson for i in feature_collection],
-        "crs": {"type": "name", "properties": {"name": target_crs}},
-    }
-
-    if path:
-        # write to file
-        # TODO: check file path exists
-        with open(path, "w") as f:
-            json.dump(geojson, f, indent=4)
-    return geojson
-
-
-def geojson_to_feature_list(geojson: str | os.PathLike | dict) -> list[Feature]:
-    # TODO: add support pathlib
-    if not isinstance(geojson, dict):
-        if os.path.exists(geojson):
-            # read from file
-            with open(geojson, "r") as f:
-                geojson = json.load(f)
-        else:
-            # load from geojson string
-            geojson = json.loads(geojson)
-
-    # if geojson is dict, no need to edit format!
-
-    crs = get_crs_from_geojson(geojson)
-    features = [Feature.from_geojson(i, crs) for i in geojson["features"]]
-    return features
-
-
-def get_dict_value_recursive(dict_: dict, keys: list[str]) -> Any:
-    """
-    Crawl recursively through a dict to return a target value.
-
-    Args:
-        dict_: the structure to crawl.
-        keys: the keys or list indices to extract the value from
-
-    Returns:
-        The value of dict_ at the cumulative keys or indices.
-    """
-    finished = False
-    output = None  # default
-    while not finished:
-        output = dict_
-        for i in keys:
-            # if output is dict and i is key
-            if isinstance(output, dict):
-                if i in output:
-                    output = output[i]
-                else:
-                    raise KeyError(f"{i} not a valid key in {output}.")
-            # if output is list and i is index
-            elif isinstance(output, list) and isinstance(i, int):
-                try:
-                    output = output[i]
-                except IndexError as exc:
-                    raise exc
-        finished = True
-    return output
-
-
-def get_crs_from_geojson(geojson: dict) -> str | None:
-    try:
-        crs = get_dict_value_recursive(geojson, ["crs", "properties", "name"])
-    except KeyError:
-        crs = None
-    return crs
+            f = Feature.from_wkt("POINT (1 2)", attributes={"id": 1})
+            d = f.to_geojson()
+            # {"type": "Feature",
+            #  "geometry": {"type": "Point", "coordinates": [1, 2]},
+            #  "properties": {"id": 1}}
+        """
+        return {
+            "type": "Feature",
+            "geometry": self.geometry.geojson,
+            "properties": self.attributes,
+        }

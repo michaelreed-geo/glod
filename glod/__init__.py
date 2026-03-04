@@ -1,5 +1,11 @@
 from .config import set_use_pyproj
-from .feature import Feature, FeatureCollection
+from .featurecollection import FeatureCollection
+from .feature import Feature
 from .geometry import Geometry
 
-__all__ = ["Feature", "FeatureCollection", "Geometry", "set_use_pyproj"]
+__all__ = [
+    "Geometry",
+    "Feature",
+    "FeatureCollection",
+    "set_use_pyproj",
+]

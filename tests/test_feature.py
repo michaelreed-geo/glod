@@ -1,126 +1,223 @@
-import importlib
-import json
+"""
+Tests for glod/feature.py
+
+Run with:  pytest test_feature.py -v
+"""
+
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(__file__))
 
 import pytest
 
-from glod import FeatureCollection, Feature, Geometry
 from glod.feature import (
-    feature_collection_to_geojson,
-    feature_to_geojson,
-    geojson_to_feature_list,
-    get_crs_from_geojson,
-    get_dict_value_recursive,
+    Feature,
 )
+from glod.geometry import LineString, Point
+
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
 
 
 @pytest.fixture
-def geojson_sample():
-    geojson = {
-        "type": "FeatureCollection",
-        "features": [
+def point_feature():
+    return Feature(
+        geometry=Point.from_geojson(
+            {"type": "Point", "coordinates": [1, 2]}, crs="epsg:27700"
+        ),
+        attributes={"name": "A", "value": 42},
+    )
+
+
+@pytest.fixture
+def line_feature():
+    return Feature(
+        geometry=LineString.from_geojson(
+            {"type": "LineString", "coordinates": [[0, 0], [1, 1]]}, crs="epsg:27700"
+        ),
+        attributes={"id": 1},
+    )
+
+
+# ---------------------------------------------------------------------------
+# Feature construction
+# ---------------------------------------------------------------------------
+
+
+class TestFeatureInit:
+    def test_geometry_is_stored(self, point_feature):
+        assert isinstance(point_feature.geometry, Point)
+
+    def test_attributes_are_stored(self, point_feature):
+        assert point_feature.attributes == {"name": "A", "value": 42}
+
+    def test_attributes_default_to_empty_dict(self):
+        f = Feature(
+            geometry=Point.from_geojson({"type": "Point", "coordinates": [1, 2]})
+        )
+        assert f.attributes == {}
+
+    def test_attributes_are_copied(self):
+        original = {"x": 1}
+        f = Feature(
+            geometry=Point.from_geojson({"type": "Point", "coordinates": [1, 2]}),
+            attributes=original,
+        )
+        f.attributes["x"] = 99
+        assert original["x"] == 1  # original not mutated
+
+    def test_repr(self, point_feature):
+        r = repr(point_feature)
+        assert "Point" in r
+        assert "name" in r
+
+
+class TestFeatureSetters:
+    def test_geometry_setter_accepts_geometry(self, point_feature):
+        new_geom = Point.from_geojson(
+            {"type": "Point", "coordinates": [9, 9]}, crs="epsg:27700"
+        )
+        point_feature.geometry = new_geom
+        assert point_feature.geometry.wkt == "POINT (9 9)"
+
+    def test_geometry_setter_rejects_non_geometry(self, point_feature):
+        with pytest.raises(TypeError, match="Geometry instance"):
+            point_feature.geometry = "POINT (1 2)"
+
+    def test_attributes_setter_accepts_dict(self, point_feature):
+        point_feature.attributes = {"new": "value"}
+        assert point_feature.attributes == {"new": "value"}
+
+    def test_attributes_setter_rejects_non_dict(self, point_feature):
+        with pytest.raises(TypeError, match="dict"):
+            point_feature.attributes = ["a", "b"]
+
+    def test_attributes_setter_copies_dict(self, point_feature):
+        d = {"x": 1}
+        point_feature.attributes = d
+        point_feature.attributes["x"] = 99
+        assert d["x"] == 1  # original not mutated
+
+
+class TestFeatureEquality:
+    def test_equal_features(self):
+        f1 = Feature(
+            Point.from_geojson({"type": "Point", "coordinates": [1, 2]}), {"a": 1}
+        )
+        f2 = Feature(
+            Point.from_geojson({"type": "Point", "coordinates": [1, 2]}), {"a": 1}
+        )
+        assert f1 == f2
+
+    def test_different_geometry(self):
+        f1 = Feature(
+            Point.from_geojson({"type": "Point", "coordinates": [1, 2]}), {"a": 1}
+        )
+        f2 = Feature(
+            Point.from_geojson({"type": "Point", "coordinates": [3, 4]}), {"a": 1}
+        )
+        assert f1 != f2
+
+    def test_different_attributes(self):
+        f1 = Feature(
+            Point.from_geojson({"type": "Point", "coordinates": [1, 2]}), {"a": 1}
+        )
+        f2 = Feature(
+            Point.from_geojson({"type": "Point", "coordinates": [1, 2]}), {"a": 2}
+        )
+        assert f1 != f2
+
+    def test_not_equal_to_non_feature(self, point_feature):
+        assert point_feature != "not a feature"
+
+
+class TestFeatureFromGeoJSON:
+    def test_basic(self):
+        f = Feature.from_geojson(
             {
                 "type": "Feature",
-                "geometry": {"type": "Point", "coordinates": [102.0, 0.5]},
-                "properties": {"prop0": "value0"},
-            },
-            {
-                "type": "Feature",
-                "geometry": {
-                    "type": "LineString",
-                    "coordinates": [
-                        [102.0, 0.0],
-                        [103.0, 1.0],
-                        [104.0, 0.0],
-                        [105.0, 1.0],
-                    ],
-                },
-                "properties": {"prop0": "value0", "prop1": 0.0},
-            },
-            {
-                "type": "Feature",
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": [
-                        [
-                            [100.0, 0.0],
-                            [101.0, 0.0],
-                            [101.0, 1.0],
-                            [100.0, 1.0],
-                            [100.0, 0.0],
-                        ]
-                    ],
-                },
-                "properties": {"prop0": "value0", "prop1": {"this": "that"}},
-            },
-        ],
-        "crs": {
-            "type": "name",
-            "properties": {
-                "name": "EPSG:3857"
+                "geometry": {"type": "Point", "coordinates": [1, 2]},
+                "properties": {"x": 1},
             }
-        }
-    }
-    return geojson
+        )
+        assert isinstance(f.geometry, Point)
+        assert f.attributes == {"x": 1}
+
+    def test_crs_passed_through(self):
+        f = Feature.from_geojson(
+            {
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [1, 2]},
+                "properties": {},
+            },
+            crs="epsg:27700",
+        )
+        assert f.geometry.crs == "epsg:27700"
+
+    def test_null_properties_become_empty_dict(self):
+        f = Feature.from_geojson(
+            {
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [1, 2]},
+                "properties": None,
+            }
+        )
+        assert f.attributes == {}
+
+    def test_missing_properties_become_empty_dict(self):
+        f = Feature.from_geojson(
+            {
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [1, 2]},
+            }
+        )
+        assert f.attributes == {}
+
+    def test_wrong_type_raises(self):
+        with pytest.raises(ValueError, match="Feature"):
+            Feature.from_geojson({"type": "FeatureCollection", "features": []})
+
+    def test_null_geometry_raises(self):
+        with pytest.raises(ValueError, match="geometry"):
+            Feature.from_geojson(
+                {"type": "Feature", "geometry": None, "properties": {}}
+            )
+
+    def test_missing_geometry_raises(self):
+        with pytest.raises(ValueError, match="geometry"):
+            Feature.from_geojson({"type": "Feature", "properties": {}})
 
 
-def test_geojson_to_feature_list_from_dict(geojson_sample):
-    feat_list = geojson_to_feature_list(geojson_sample)
-    # check number of features
-    assert len(feat_list) == 3
-    # check types of features
-    feat_types = [i.geometry.type for i in feat_list]
-    assert feat_types == ["Point", "LineString", "Polygon"]
-    # check crs of features
-    feat_crs = set([i.geometry.crs for i in feat_list])
-    assert feat_crs == {"EPSG:3857"}
+class TestFeatureFromWKT:
+    def test_basic(self):
+        f = Feature.from_wkt("POINT (1 2)", attributes={"id": 1}, crs="epsg:27700")
+        assert isinstance(f.geometry, Point)
+        assert f.attributes == {"id": 1}
+        assert f.geometry.crs == "epsg:27700"
+
+    def test_no_attributes(self):
+        f = Feature.from_wkt("POINT (1 2)")
+        assert f.attributes == {}
 
 
-def test_geojson_to_feature_list_from_path(tmp_path, geojson_sample):
-    temp_file = tmp_path / "sample.geojson"
-    temp_file.write_text(json.dumps(geojson_sample))
-
-    feat_list = geojson_to_feature_list(str(temp_file))
-    # check number of features
-    assert len(feat_list) == 3
-    # check types of features
-    feat_types = [i.geometry.type for i in feat_list]
-    assert feat_types == ["Point", "LineString", "Polygon"]
-    # check crs of features
-    feat_crs = set([i.geometry.crs for i in feat_list])
-    assert feat_crs == {"EPSG:3857"}
+# ---------------------------------------------------------------------------
+# Feature serialisation
+# ---------------------------------------------------------------------------
 
 
-def test_geojson_to_feature_list_from_string(monkeypatch, geojson_sample):
-    geojson_str = json.dumps(geojson_sample)
-    monkeypatch.setattr("glod.feature.os.path.exists", lambda p: False)
-    feat_list = geojson_to_feature_list(geojson_str)
-    # check number of features
-    assert len(feat_list) == 3
-    # check types of features
-    feat_types = [i.geometry.type for i in feat_list]
-    assert feat_types == ["Point", "LineString", "Polygon"]
-    # check crs of features
-    feat_crs = set([i.geometry.crs for i in feat_list])
-    assert feat_crs == {"EPSG:3857"}
+class TestFeatureToGeoJSON:
+    def test_type_is_feature(self, point_feature):
+        assert point_feature.to_geojson()["type"] == "Feature"
 
+    def test_geometry_is_present(self, point_feature):
+        geojson = point_feature.to_geojson()
+        assert geojson["geometry"]["type"] == "Point"
+        assert geojson["geometry"]["coordinates"] == [1, 2]
 
-def test_get_crs_from_geojson_valid(geojson_sample):
-    assert get_crs_from_geojson(geojson_sample) == "EPSG:3857"
+    def test_properties_are_present(self, point_feature):
+        assert point_feature.to_geojson()["properties"] == {"name": "A", "value": 42}
 
-
-def test_get_crs_from_geojson_invalid():
-    geojson = {
-        "crs": None
-    }
-    assert get_crs_from_geojson(geojson) is None
-
-
-@pytest.mark.parametrize(
-    "keys, expected",
-    [
-        (["type"], "FeatureCollection"),
-        (["features", -1, "properties", "prop1", "this"], "that")
-    ]
-)
-def test_get_dict_value_recursive(geojson_sample, keys, expected):
-    assert get_dict_value_recursive(geojson_sample, keys) == expected
+    def test_geo_interface(self, point_feature):
+        assert point_feature.__geo_interface__ == point_feature.to_geojson()

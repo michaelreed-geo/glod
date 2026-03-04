@@ -8,19 +8,19 @@ to rely on more extensive spatial packages.
 
 The goal of this project, as the name suggests, is to keep the number of external dependencies low!
 
-![Dynamic TOML Badge](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmichaelreed-geo%2Fglod%2Frefs%2Fheads%2Fmain%2Fpyproject.toml&query=%24.project.dependencies&style=flat-square&label=mandatory%20dependencies&color=rgb(69%2C117%2C243))<br>![Dynamic TOML Badge](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmichaelreed-geo%2Fglod%2Frefs%2Fheads%2Fmain%2Fpyproject.toml&query=%24.project.optional-dependencies%5B*%5D&style=flat-square&label=optional%20dependencies&color=rgb(91%2C208%2C187))
+![Dynamic TOML Badge](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmichaelreed-geo%2Fglod%2Frefs%2Fheads%2Fmain%2Fpyproject.toml&query=%24.project.dependencies&style=flat-square&label=mandatory%20dependencies&color=rgb(69%2C117%2C243))<br>![Dynamic TOML Badge](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmichaelreed-geo%2Fglod%2Frefs%2Fheads%2Fmain%2Fpyproject.toml&query=%24.project.optional-dependencies%5B*%5D&style=flat-square&label=optional%20dependencies&color=rgb(105%2C51%2C176))
 
 ## Features
 
 ---
-* Supports simple, 2D geometries (Point, LineString, Polygon) via a single `Geometry` object
+* Supports 2D and 3D singlepart geometries (Point, LineString, Polygon) and their multi-part equivalents (MultiPoint, MultiLineString, MultiPolygon)
 * Store attributes alongside geometries with the `Feature` object
 * Group features as `FeatureCollection` objects
-* Analyse intersections between geometries
-* Access basic geometric properties of geometries (centroid, bounds)
-* Import/export `Geometry` as Well Known Text (WKT) or geojson types
-* Import/export `FeatureCollection` as full geojson files 
-* Implements the [`__geo_interface__`](https://gist.github.com/sgillies/2217756) protocol for interoperability with other packages and software
+* Test geometric intersections between any two geometries with `Geometry.intersects()`
+* Access geometric properties (bounds, WKT, GeoJSON, CRS, has_z)
+* Construct geometries from WKT, GeoJSON, coordinate arrays, bounding boxes, or any object implementing `__geo_interface__`
+* Import/export `FeatureCollection` as GeoJSON files or CSV with a WKT geometry column
+* Implements the [`__geo_interface__`](https://gist.github.com/sgillies/2217756) protocol for interoperability with other packages
 * Optional: uses [pyproj](https://github.com/pyproj4/pyproj) for coordinate transforms (see [Installation](#Installation))
 
 ## Installation
@@ -29,9 +29,8 @@ The goal of this project, as the name suggests, is to keep the number of externa
 
 ## Usage
 
-Typical usage is for handling spatial data returned by APIs in non-native GIS forms and turning it into something useful and consistent for onward usage.
 
-### Data formatting
+### Typical usage
 
 ```python
 from glod import Feature, FeatureCollection, Geometry
@@ -41,15 +40,14 @@ data = [
     {'id': 'point1', 'easting': 12, 'northing': 34, 'date': 2021},
     {'id': 'point2', 'easting': 56, 'northing': 78, 'date': 2023}
 ]
-api_crs = 'EPSG:27700'  # assume the coordinate reference system of the API is known
+api_crs = 'EPSG:27700'
 
 # turn each item of data into a glod Feature with geometry and attributes
 all_features = []
 for item in data:
     geometry = Geometry.from_coordinates(coordinates=(item['easting'], item['northing']), crs=api_crs)
     attributes = {'id': item['id'], 'date': item['date']}
-    feature = Feature(geometry, attributes)
-    all_features.append(feature)
+    all_features.append(Feature(geometry, attributes))
 
 # collate features as a FeatureCollection
 collection = FeatureCollection(all_features)
@@ -57,27 +55,62 @@ collection = FeatureCollection(all_features)
 # write to a geojson
 geojson = collection.to_geojson('api_data.geojson')
 
-print(geojson)
-# {'type': 'FeatureCollection', 'features': [{'type': 'Feature', 'geometry': {'type': 'Point', 'coordinates': [12.0, 34.0]}, ...]}
-
-# iterate through features and do _whatever_
+# iterate through features
 for feature in collection:
-    print(feature.attributes['id'], feature.geometry.to_wkt, feature.geometry.crs)
-    ...
+    print(feature.attributes['id'], feature.geometry.wkt, feature.geometry.crs)
 
-# point1 POINT (12.0, 34.0) EPSG:27700
-# point2 POINT (56.0, 78.0) EPSG:27700 
+# point1 POINT (12 34) EPSG:27700
+# point2 POINT (56 78) EPSG:27700
 ```
 
-### Geometry processing
-It can also be used as a lightweight means of checking for geometry intersections.
+### Geometry construction
+
+```python
+from glod import Geometry
+from glod.geometry import Point, Polygon
+
+# from WKT
+line = Geometry.from_wkt("LINESTRING (0 0, 1 1, 2 0)", crs="EPSG:27700")
+
+# from GeoJSON dict
+point = Geometry.from_geojson({"type": "Point", "coordinates": [1.0, 2.0]}, crs="EPSG:27700")
+
+# from a coordinate array (type inferred from structure)
+poly = Geometry.from_coordinates([[[0, 0], [1, 0], [1, 1], [0, 0]]])
+
+# from a bounding box
+bbox = Polygon.from_bounds((0, 0, 10, 10), crs="EPSG:27700")
+
+# from any object implementing __geo_interface__ (e.g. shapely)
+glod_geom = Geometry.from_object(shapely_geom, crs="EPSG:27700")
+```
+
+### Test geometry intersections
 
 ```python
 from glod import Geometry
 
-geometry1 = Geometry.from_wkt(wkt="Polygon ((0 0, 0 10, 10 10, 10 0, 0 0))", crs="EPSG:3857")
-geometry2 = Geometry.from_bounds(bounds=(5, 5, 15, 15), crs="EPSG:3857")
+geometry1 = Geometry.from_wkt("POLYGON ((0 0, 0 10, 10 10, 10 0, 0 0))", crs="EPSG:3857")
+geometry2 = Geometry.from_wkt("POLYGON ((5 5, 5 15, 15 15, 15 5, 5 5))", crs="EPSG:3857")
 
 print(geometry1.intersects(geometry2))
 # True
 ```
+
+### CSV I/O
+
+```python
+# write to CSV with a WKT geometry column
+collection.to_csv("data.csv")
+
+# read back, supplying the CRS since CSV has no standard CRS field
+collection2 = FeatureCollection.from_csv("data.csv", crs="EPSG:27700")
+```
+
+### Coordinate Reference System (CRS) transforms
+
+Transformation is handled by _pyproj_. Because this is an optional dependency, it must
+be internally enabled within _glod_ by calling `glod.config.set_use_pyproj(True)`
+before running your code.
+
+By default _pyproj_ will be disabled every run time unless specifically enabled.
