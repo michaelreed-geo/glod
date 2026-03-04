@@ -1,23 +1,10 @@
 from .config import set_use_pyproj
-from .feature import Feature, FeatureCollection
-from .geometry import (
-    Geometry,
-    LineString,
-    MultiLineString,
-    MultiPoint,
-    MultiPolygon,
-    Point,
-    Polygon,
-)
+from .featurecollection import FeatureCollection
+from .feature import Feature
+from .geometry import Geometry
 
 __all__ = [
     "Geometry",
-    "Point",
-    "LineString",
-    "Polygon",
-    "MultiPoint",
-    "MultiLineString",
-    "MultiPolygon",
     "Feature",
     "FeatureCollection",
     "set_use_pyproj",
