@@ -1,9 +1,14 @@
 [project]
 name = "glod"
 version = "0.1.0"
-description = "geometry, low On dependencies"
+description = "geometry, low on dependencies"
 requires-python = ">=3.12"
 dependencies = []
+readme = "README.md"
+
+[project.urls]
+Repository = "https://github.com/michaelreed-geo/glod/"
+Issues = "https://github.com/michaelreed-geo/glod/issues"
 
 [tool.setuptools]
 packages = ["glod"]
