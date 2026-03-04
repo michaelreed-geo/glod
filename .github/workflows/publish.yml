@@ -26,6 +26,7 @@ jobs:
             echo "Tag $TAG does not match pyproject.toml version $VERSION"
             exit 1
           fi
+          echo "RELEASE_VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Build release distributions
         run: |
@@ -46,7 +47,9 @@ jobs:
       id-token: write
     environment:
       name: pypi
-      url: https://pypi.org/project/glod/${{ github.event.release.tag_name | replace('v', '') }}
+      url: https://pypi.org/project/glod/${{ needs.release-build.outputs.release_version }}
+    outputs:
+      release_version: ${{ jobs.release-build.steps.check-version.outputs.release_version }}
 
     steps:
       - name: Retrieve release distributions
