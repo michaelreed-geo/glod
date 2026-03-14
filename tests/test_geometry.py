@@ -75,7 +75,7 @@ class TestPoint:
         assert point_2d.type == GeometryType.POINT
 
     def test_crs(self, point_2d):
-        assert point_2d.crs == "epsg:27700"
+        assert point_2d.crs == "EPSG:27700"
 
     def test_coordinates_2d(self, point_2d):
         assert point_2d.coordinates == (1, 2)
@@ -330,7 +330,7 @@ class TestFromGeoJSON:
 
     def test_crs_is_passed_through(self):
         g = Point.from_geojson({"type": "Point", "coordinates": [1, 2]}, crs="epsg:4326")
-        assert g.crs == "epsg:4326"
+        assert g.crs == "EPSG:4326"
 
     def test_wrong_type_for_subclass_raises(self):
         with pytest.raises(TypeError):
@@ -365,7 +365,7 @@ class TestFromWKT:
 
     def test_crs_is_passed_through(self):
         g = Geometry.from_wkt("POINT (1 2)", crs="epsg:4326")
-        assert g.crs == "epsg:4326"
+        assert g.crs == "EPSG:4326"
 
     def test_wrong_type_for_subclass_raises(self):
         with pytest.raises(TypeError, match="does not match"):
@@ -413,7 +413,7 @@ class TestFromObject:
     def test_crs_is_passed_through(self):
         obj = self._FakeGeoObj({"type": "Point", "coordinates": [10, 20]})
         g = Geometry.from_object(obj, crs="epsg:4326")
-        assert g.crs == "epsg:4326"
+        assert g.crs == "EPSG:4326"
 
     def test_missing_geo_interface_raises(self):
         with pytest.raises(TypeError, match="__geo_interface__"):
@@ -474,7 +474,7 @@ class TestFromCoordinates:
 
     def test_crs_is_passed_through(self):
         p = Geometry.from_coordinates([1, 2], crs="epsg:27700")
-        assert p.crs == "epsg:27700"
+        assert p.crs == "EPSG:27700"
 
     def test_validation_still_runs(self):
         with pytest.raises(ValueError):
@@ -530,7 +530,7 @@ class TestFromBounds:
 
     def test_crs_is_passed_through(self):
         poly = Polygon.from_bounds((0, 0, 1, 1), crs="epsg:27700")
-        assert poly.crs == "epsg:27700"
+        assert poly.crs == "EPSG:27700"
 
     def test_wrong_length_raises(self):
         with pytest.raises(ValueError, match="4-tuple"):
@@ -551,25 +551,25 @@ class TestToSinglepart:
         p = mp.to_singlepart()
         assert isinstance(p, Point)
         assert p.wkt == "POINT (1 2)"
-        assert p.crs == "epsg:27700"
+        assert p.crs == "EPSG:27700"
 
     def test_multilinestring_to_linestring(self):
         mls = MultiLineString.from_geojson({"type": "MultiLineString", "coordinates": [[[0, 0], [1, 1]]]}, crs="epsg:27700")
         ls = mls.to_singlepart()
         assert isinstance(ls, LineString)
         assert ls.wkt == "LINESTRING (0 0, 1 1)"
-        assert ls.crs == "epsg:27700"
+        assert ls.crs == "EPSG:27700"
 
     def test_multipolygon_to_polygon(self):
         mpoly = MultiPolygon.from_geojson({"type": "MultiPolygon", "coordinates": [[[[0, 0], [1, 0], [1, 1], [0, 0]]]]}, crs="epsg:27700")
         poly = mpoly.to_singlepart()
         assert isinstance(poly, Polygon)
         assert poly.wkt == "POLYGON ((0 0, 1 0, 1 1, 0 0))"
-        assert poly.crs == "epsg:27700"
+        assert poly.crs == "EPSG:27700"
 
     def test_crs_is_preserved(self):
         mp = MultiPoint.from_geojson({"type": "MultiPoint", "coordinates": [[1, 2]]}, crs="epsg:4326")
-        assert mp.to_singlepart().crs == "epsg:4326"
+        assert mp.to_singlepart().crs == "EPSG:4326"
 
     def test_crs_none_is_preserved(self):
         mp = MultiPoint.from_geojson({"type": "MultiPoint", "coordinates": [[1, 2]]})
@@ -644,7 +644,7 @@ class TestTransform:
         with self._patch_transformer(fake_t):
             result = p.transform("epsg:27700")
         assert isinstance(result, Point)
-        assert result.crs == "epsg:27700"
+        assert result.crs == "EPSG:27700"
         assert result.wkt == "POINT (530000 180000)"
 
     def test_point_transform_3d(self):
@@ -670,7 +670,7 @@ class TestTransform:
         with self._patch_transformer(fake_t):
             result = ls.transform("epsg:27700")
         assert isinstance(result, LineString)
-        assert result.crs == "epsg:27700"
+        assert result.crs == "EPSG:27700"
         assert result.wkt == "LINESTRING (530000 180000, 537000 191000)"
 
     def test_polygon_transform(self):
@@ -688,7 +688,7 @@ class TestTransform:
         with self._patch_transformer(fake_t):
             result = poly.transform("epsg:27700")
         assert isinstance(result, Polygon)
-        assert result.crs == "epsg:27700"
+        assert result.crs == "EPSG:27700"
 
     def test_returns_same_class(self):
         import glod.config

@@ -11,15 +11,16 @@ The class supports reading from and writing to GeoJSON (dict, raw JSON string, o
 path), as well as additionally supports CSV with a WKT geometry column.
 """
 
-
 from __future__ import annotations
 
 import csv
 import json
 import os
 import warnings
+from typing import Literal
 
 import glod.config as _config
+
 from .feature import Feature
 from .geometry import CrsType
 
@@ -159,6 +160,8 @@ class FeatureCollection:
         if not self._features:
             return None
         crses = {f.geometry.crs for f in self._features}
+        # uppercase crses for standard output
+        crses = [i.upper() if isinstance(i, str) else i for i in crses]
         return crses.pop() if len(crses) == 1 else None
 
     # ---- features property ----
@@ -364,8 +367,10 @@ class FeatureCollection:
         self,
         path: str | os.PathLike | None = None,
         crs: CrsType = None,
-    ) -> dict:
-        """Serialise to a GeoJSON FeatureCollection dict, optionally writing to a file.
+        fmt: Literal["dict", "str"] = "dict",
+    ) -> dict | str:
+        """Serialise to a GeoJSON FeatureCollection dict or str, optionally writing to
+        a file.
 
         **CRS normalisation**: if features carry mixed CRS values they are reprojected
         to a common target before export. The target CRS is resolved in priority
@@ -384,9 +389,11 @@ class FeatureCollection:
             crs: Override the target CRS for the output. If omitted, the shared
                 :attr:`crs` of the collection is used, falling back to the most common
                 CRS when the collection is mixed.
+            fmt: if ``"dict"`` returns a json formatted dict, if ``"str"`` returns a
+                json formatted string.
 
         Returns:
-            A ``dict`` representing the GeoJSON ``FeatureCollection``.
+            A ``dict`` or ``str`` representing the GeoJSON ``FeatureCollection``.
 
         Raises:
             OSError: If *path* is provided but the file cannot be written.
@@ -414,6 +421,8 @@ class FeatureCollection:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(geojson, f, indent=4)
 
+        if fmt == "str":
+            geojson = json.dumps(geojson)
         return geojson
 
     def to_csv(

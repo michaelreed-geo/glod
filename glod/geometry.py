@@ -803,6 +803,9 @@ class Geometry(ABC):
             ValueError: If required keys are missing, the ``"type"`` field does not
                 match this class's expected type, or coordinate validation fails.
         """
+        # uppercase CRS for standardised formatting
+        if isinstance(crs, str):
+            crs = crs.upper()
         self._crs = crs
 
         if geojson is None:

@@ -101,7 +101,7 @@ class TestFeatureCollectionInit:
     def test_repr(self, simple_fc):
         r = repr(simple_fc)
         assert "2 features" in r
-        assert "epsg:27700" in r
+        assert "EPSG:27700" in r
 
 
 class TestFeatureCollectionSetters:
@@ -190,7 +190,7 @@ class TestFeatureCollectionEquality:
 
 class TestFeatureCollectionCRS:
     def test_uniform_crs_returned(self, simple_fc):
-        assert simple_fc.crs == "epsg:27700"
+        assert simple_fc.crs == "EPSG:27700"
 
     def test_mixed_crs_returns_none(self):
         fc = FeatureCollection(
@@ -238,11 +238,11 @@ class TestFeatureCollectionCRS:
                 ),
             ]
         )
-        assert fc.crs == "epsg:27700"
+        assert fc.crs == "EPSG:27700"
         fc[0].geometry = Point.from_geojson(
             {"type": "Point", "coordinates": [1, 2]}, crs="epsg:4326"
         )
-        assert fc.crs == "epsg:4326"
+        assert fc.crs == "EPSG:4326"
 
     def test_crs_is_read_only(self, simple_fc):
         with pytest.raises(AttributeError):
@@ -258,12 +258,12 @@ class TestFeatureCollectionFromGeoJSON:
     def test_from_dict(self, geojson_fc_dict):
         fc = FeatureCollection.from_geojson(geojson_fc_dict)
         assert len(fc) == 2
-        assert fc.crs == "epsg:27700"
+        assert fc.crs == "EPSG:27700"
 
     def test_crs_propagated_to_features(self, geojson_fc_dict):
         fc = FeatureCollection.from_geojson(geojson_fc_dict)
-        assert fc[0].geometry.crs == "epsg:27700"
-        assert fc[1].geometry.crs == "epsg:27700"
+        assert fc[0].geometry.crs == "EPSG:27700"
+        assert fc[1].geometry.crs == "EPSG:27700"
 
     def test_from_json_string(self, geojson_fc_dict):
         fc = FeatureCollection.from_geojson(json.dumps(geojson_fc_dict))
@@ -343,8 +343,8 @@ class TestFeatureCollectionFromCSV:
         )
         try:
             fc = FeatureCollection.from_csv(path, crs="epsg:27700")
-            assert fc[0].geometry.crs == "epsg:27700"
-            assert fc.crs == "epsg:27700"
+            assert fc[0].geometry.crs == "EPSG:27700"
+            assert fc.crs == "EPSG:27700"
         finally:
             os.unlink(path)
 
@@ -381,7 +381,7 @@ class TestFeatureCollectionToGeoJSON:
 
     def test_crs_written(self, simple_fc):
         out = simple_fc.to_geojson()
-        assert out["crs"]["properties"]["name"] == "epsg:27700"
+        assert out["crs"]["properties"]["name"] == "EPSG:27700"
 
     def test_no_crs_omits_crs_field(self):
         fc = FeatureCollection(
@@ -401,6 +401,15 @@ class TestFeatureCollectionToGeoJSON:
             assert len(loaded["features"]) == 2
         finally:
             os.unlink(tmppath)
+        
+    def test_fmt_as_string(self, simple_fc):
+        expected = '{"type": "FeatureCollection", ' \
+        '"crs": {"type": "name", "properties": {"name": "EPSG:27700"}}, ' \
+        '"features": [' \
+        '{"type": "Feature", "geometry": {"type": "Point", "coordinates": [1, 2]}, "properties": {"name": "A", "value": 42}}, ' \
+        '{"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[0, 0], [1, 1]]}, "properties": {"id": 1}}' \
+        ']}'
+        assert simple_fc.to_geojson(fmt="str") == expected
 
     def test_metadata_written(self):
         fc = FeatureCollection(
@@ -582,8 +591,8 @@ class TestNormaliseCRS:
         fake_pyproj.Transformer.from_crs.return_value = fake_t
         with mock.patch.dict("sys.modules", {"pyproj": fake_pyproj}):
             result = _normalise_crs(features, target_crs="epsg:27700")
-        assert result[0].geometry.crs == "epsg:27700"
-        assert result[1].geometry.crs == "epsg:27700"
+        assert result[0].geometry.crs == "EPSG:27700"
+        assert result[1].geometry.crs == "EPSG:27700"
         glod.config.USE_PYPROJ = False
 
     def test_empty_list_returns_empty(self):
@@ -606,7 +615,7 @@ class TestMostCommonCRS:
                 {},
             ),
         ]
-        assert _most_common_crs(features) == "epsg:27700"
+        assert _most_common_crs(features) == "EPSG:27700"
 
     def test_mixed_returns_most_frequent(self):
         features = [
@@ -629,7 +638,7 @@ class TestMostCommonCRS:
                 {},
             ),
         ]
-        assert _most_common_crs(features) == "epsg:27700"
+        assert _most_common_crs(features) == "EPSG:27700"
 
     def test_empty_returns_none(self):
         assert _most_common_crs([]) is None
