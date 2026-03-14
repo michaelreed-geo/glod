@@ -159,7 +159,9 @@ class FeatureCollection:
         """
         if not self._features:
             return None
-        crses = {f.geometry.crs.upper() for f in self._features}
+        crses = {f.geometry.crs for f in self._features}
+        # uppercase crses for standard output
+        crses = [i.upper() if isinstance(i, str) else i for i in crses]
         return crses.pop() if len(crses) == 1 else None
 
     # ---- features property ----

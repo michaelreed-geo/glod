@@ -154,7 +154,7 @@ class TestFeatureFromGeoJSON:
             },
             crs="epsg:27700",
         )
-        assert f.geometry.crs == "epsg:27700"
+        assert f.geometry.crs == "EPSG:27700"
 
     def test_null_properties_become_empty_dict(self):
         f = Feature.from_geojson(
@@ -195,7 +195,7 @@ class TestFeatureFromWKT:
         f = Feature.from_wkt("POINT (1 2)", attributes={"id": 1}, crs="epsg:27700")
         assert isinstance(f.geometry, Point)
         assert f.attributes == {"id": 1}
-        assert f.geometry.crs == "epsg:27700"
+        assert f.geometry.crs == "EPSG:27700"
 
     def test_no_attributes(self):
         f = Feature.from_wkt("POINT (1 2)")
