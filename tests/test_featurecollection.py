@@ -401,6 +401,15 @@ class TestFeatureCollectionToGeoJSON:
             assert len(loaded["features"]) == 2
         finally:
             os.unlink(tmppath)
+        
+    def test_fmt_as_string(self, simple_fc):
+        expected = '{"type": "FeatureCollection", ' \
+        '"crs": {"type": "name", "properties": {"name": "EPSG:27700"}}, ' \
+        '"features": [' \
+        '{"type": "Feature", "geometry": {"type": "Point", "coordinates": [1, 2]}, "properties": {"name": "A", "value": 42}}, ' \
+        '{"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[0, 0], [1, 1]]}, "properties": {"id": 1}}' \
+        ']}'
+        assert simple_fc.to_geojson(fmt="str") == expected
 
     def test_metadata_written(self):
         fc = FeatureCollection(
